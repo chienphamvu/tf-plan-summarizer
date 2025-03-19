@@ -84,10 +84,10 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         const selection = editor.selection;
-        let planOutput = editor.document.getText(selection);
+        let planOutput = selection.isEmpty ? editor.document.getText() : editor.document.getText(selection);
 
         if (!isPlanOutput(planOutput)) {
-            vscode.window.showErrorMessage('No valid Terraform plan selected.');
+            vscode.window.showErrorMessage('No valid Terraform plan found.');
             return;
         }
 
@@ -96,7 +96,7 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.languages.setTextDocumentLanguage(editor.document, 'terraform');
 
             // Remove everything before and including "Terraform will perform the following actions"
-            const startMarker = 'Terraform will perform the following actions:\n';
+            const startMarker = 'Terraform will perform the following actions:\n\n';
             const startIndex = planOutput.indexOf(startMarker);
             if (startIndex !== -1) {
                 planOutput = planOutput.substring(startIndex + startMarker.length);
@@ -124,8 +124,10 @@ export function activate(context: vscode.ExtensionContext) {
             // Add one space before data
             planOutput = planOutput.replace(/^ <= data/gm, '  <= data');
 
+            const replaceRange = selection.isEmpty ? new vscode.Range(editor.document.positionAt(0), editor.document.positionAt(editor.document.getText().length)) : selection;
+
             await editor.edit(editBuilder => {
-                editBuilder.replace(selection, planOutput);
+                editBuilder.replace(replaceRange, planOutput);
             });
 
             vscode.window.showInformationMessage('Terraform plan summarized in-place.');
