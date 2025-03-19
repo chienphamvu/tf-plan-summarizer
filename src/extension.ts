@@ -59,7 +59,8 @@ export function activate(context: vscode.ExtensionContext) {
                 'Terraform Plan Summary',
                 vscode.ViewColumn.One,
                 {
-                    enableScripts: true
+                    enableScripts: true,
+                    enableFindWidget: true
                 }
             );
             
