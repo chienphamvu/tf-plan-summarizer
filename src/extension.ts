@@ -180,10 +180,11 @@ function extractResourceDetails(
     resourceAddresses.forEach(address => {
         // Escape the address for regex
         const escapedAddress = address.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
         // Create a pattern that looks for the specific block for this resource
         const pattern = new RegExp(
-            `# ${escapedAddress} ${changeType}[\\s\\S]*?(\\${symbol})\\s+resource\\s+"([^"]+)"\\s+"([^"]+)"\\s+{([\\s\\S]*?)(?=(\n\\s {0,2}#|\nPlan\:|$))`,
+            `# ${escapedAddress} ${changeType}[\\s\\S]*?(${escapedSymbol})\\s+resource\\s+"([^"]+)"\\s+"([^"]+)"\\s+{([\\s\\S]*?)(?=(\n\\s {0,2}#|\nPlan\:|$))`,
             'i'
         );
 
