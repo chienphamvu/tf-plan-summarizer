@@ -100,12 +100,12 @@ function parsePlanOutput(planOutput: string): ParseResult {
     const updateRegex = /# (.+?) will be updated in-place/g;
     const destroyRegex = /# (.+?) will be destroyed/g;
     const replaceRegex = /# (.+?) must be replaced/g;
-    
+
     const createMatches = Array.from(planOutput.matchAll(createRegex)).map(match => match[1]);
     const updateMatches = Array.from(planOutput.matchAll(updateRegex)).map(match => match[1]);
     const destroyMatches = Array.from(planOutput.matchAll(destroyRegex)).map(match => match[1]);
     const replaceMatches = Array.from(planOutput.matchAll(replaceRegex)).map(match => match[1]);
-    
+
     let summary = '';
 
     if (destroyMatches.length > 0) {
@@ -116,16 +116,34 @@ function parsePlanOutput(planOutput: string): ParseResult {
             summary += `<div class="resource destroy" data-address="${cleanedAddress}">- ${resource}</div>\n`;
         });
     }
+    const replaceCreateBeforeDestroyMatches = replaceMatches.filter(resource => {
+        const regex = new RegExp(`# ${escapeRegExp(resource)} must be replaced\\n\\s*\\+/`);
+        return regex.test(planOutput);
+    });
 
-    if (replaceMatches.length > 0) {
-        summary += `<h2 class="destroy">${replaceMatches.length} MUST BE REPLACED</h2>\n`;
-        replaceMatches.forEach(resource => {
+    const replaceDestroyBeforeCreateMatches = replaceMatches.filter(resource => {
+        const regex = new RegExp(`# ${escapeRegExp(resource)} must be replaced\\n\\s*-/`);
+        return regex.test(planOutput);
+    });
+
+    if (replaceCreateBeforeDestroyMatches.length > 0) {
+        summary += `<h2 class="destroy">${replaceCreateBeforeDestroyMatches.length} CREATE BEFORE DESTROY REPLACEMENT</h2>\n`;
+        replaceCreateBeforeDestroyMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy" data-address="${cleanedAddress}">-+ ${resource}</div>\n`;
+            summary += `<div class="resource destroy" data-address="${cleanedAddress}">+/- ${resource}</div>\n`;
         });
     }
-    
+
+    if (replaceDestroyBeforeCreateMatches.length > 0) {
+        summary += `<h2 class="destroy">${replaceDestroyBeforeCreateMatches.length} DESTROY BEFORE CREATE REPLACEMENT</h2>\n`;
+        replaceDestroyBeforeCreateMatches.forEach(resource => {
+            // Remove quotes from data-address
+            const cleanedAddress = resource.replace(/"/g, '');
+            summary += `<div class="resource destroy" data-address="${cleanedAddress}">-/+ ${resource}</div>\n`;
+        });
+    }
+
     if (updateMatches.length > 0) {
         summary += `<h2 class="update">${updateMatches.length} TO BE UPDATED</h2>\n`;
         updateMatches.forEach(resource => {
@@ -161,9 +179,13 @@ function parsePlanOutput(planOutput: string): ParseResult {
     extractResourceDetails(planOutput, destroyMatches, 'will be destroyed', '-', resourceDetails);
 
     // Process resources must be replaced
-    extractResourceDetails(planOutput, replaceMatches, 'must be replaced', '+/-', resourceDetails);
-    extractResourceDetails(planOutput, replaceMatches, 'must be replaced', '-/+', resourceDetails);
-    
+    replaceCreateBeforeDestroyMatches.forEach(resource => {
+        extractResourceDetails(planOutput, [resource], 'must be replaced', '+/-', resourceDetails);
+    });
+    replaceDestroyBeforeCreateMatches.forEach(resource => {
+        extractResourceDetails(planOutput, [resource], 'must be replaced', '-/+', resourceDetails);
+    });
+
     return { summary, resourceDetails };
 }
 
