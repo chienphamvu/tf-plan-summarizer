@@ -92,14 +92,34 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         try {
+            // Set syntax to Terraform
+            vscode.languages.setTextDocumentLanguage(editor.document, 'terraform');
+
+            // Remove everything before and including "Terraform will perform the following actions"
+            const startMarker = 'Terraform will perform the following actions:\n';
+            const startIndex = planOutput.indexOf(startMarker);
+            if (startIndex !== -1) {
+                planOutput = planOutput.substring(startIndex + startMarker.length);
+            }
+
+            // Remove everything after "Plan: x to add, x to change, x to destroy."
+            const endMarkerRegex = /Plan: \d+ to add, \d+ to change, \d+ to destroy\..*/;
+            const endMatch = planOutput.match(endMarkerRegex);
+            if (endMatch) {
+                planOutput = planOutput.substring(0, endMatch.index! + endMatch[0].length);
+            }
+
             // Remove leading spaces
             planOutput = planOutput.replace(/^ {2}#/gm, '#');
 
             // Add two spaces before resource details
             planOutput = planOutput.replace(/^([+-~]|\+\/\-|\-\/\+) resource/gm, '  $1 resource');
 
-            // Add two spaces before config refers to values not yet known
+            // Add two spaces before "config refers to values not yet known"
             planOutput = planOutput.replace(/^# \(config refers to values not yet known\)/gm, '  # (config refers to values not yet known)');
+
+            // Add two spaces before "depends on a resource or a module with changes pending"
+            planOutput = planOutput.replace(/^# \(depends on a resource or a module with changes pending\)/gm, '  # (depends on a resource or a module with changes pending)');
 
             // Add one space before data
             planOutput = planOutput.replace(/^ <= data/gm, '  <= data');
