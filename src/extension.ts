@@ -122,7 +122,7 @@ function parsePlanOutput(planOutput: string): ParseResult {
         replaceMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy" data-address="${cleanedAddress}">- ${resource}</div>\n`;
+            summary += `<div class="resource destroy" data-address="${cleanedAddress}">-+ ${resource}</div>\n`;
         });
     }
     
@@ -154,10 +154,10 @@ function parsePlanOutput(planOutput: string): ParseResult {
     // Process resources to be created
     extractResourceDetails(planOutput, createMatches, 'will be created', '+', resourceDetails);
     
-    // Process resources to be updated
+    // // Process resources to be updated
     extractResourceDetails(planOutput, updateMatches, 'will be updated in-place', '~', resourceDetails);
     
-    // Process resources to be destroyed
+    // // Process resources to be destroyed
     extractResourceDetails(planOutput, destroyMatches, 'will be destroyed', '-', resourceDetails);
 
     // Process resources must be replaced
