@@ -76,7 +76,47 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
+    let disposableInPlace = vscode.commands.registerCommand('terraform-plan-summarizer.summarizeInPlace', async () => {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            vscode.window.showErrorMessage('No active text editor.');
+            return;
+        }
+
+        const selection = editor.selection;
+        let planOutput = editor.document.getText(selection);
+
+        if (!isPlanOutput(planOutput)) {
+            vscode.window.showErrorMessage('No valid Terraform plan selected.');
+            return;
+        }
+
+        try {
+            // Remove leading spaces
+            planOutput = planOutput.replace(/^ {2}#/gm, '#');
+
+            // Add two spaces before resource details
+            planOutput = planOutput.replace(/^([+-~]|\+\/\-|\-\/\+) resource/gm, '  $1 resource');
+
+            // Add two spaces before config refers to values not yet known
+            planOutput = planOutput.replace(/^# \(config refers to values not yet known\)/gm, '  # (config refers to values not yet known)');
+
+            // Add one space before data
+            planOutput = planOutput.replace(/^ <= data/gm, '  <= data');
+
+            await editor.edit(editBuilder => {
+                editBuilder.replace(selection, planOutput);
+            });
+
+            vscode.window.showInformationMessage('Terraform plan summarized in-place.');
+
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to summarize plan in-place: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    });
+
     context.subscriptions.push(disposable);
+    context.subscriptions.push(disposableInPlace);
 }
 
 /**
