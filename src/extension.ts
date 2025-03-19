@@ -126,6 +126,12 @@ export function activate(context: vscode.ExtensionContext) {
             // Remove leading spaces
             planOutput = planOutput.replace(/^ {2}#/gm, '#');
 
+            // Reorder "will be" phrases
+            planOutput = planOutput.replace(/^# (.+?) will be created/gm, '# CREATE  $1');
+            planOutput = planOutput.replace(/^# (.+?) will be updated in-place/gm, '# UPDATE  $1');
+            planOutput = planOutput.replace(/^# (.+?) will be read during apply/gm, '# READ    $1');
+            planOutput = planOutput.replace(/^# (.+?) must be replaced/gm, '# REPLACE $1');
+
             // Add two spaces before resource details
             planOutput = planOutput.replace(/^([+-~]|\+\/\-|\-\/\+) resource/gm, '  $1 resource');
 
