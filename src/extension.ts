@@ -19,18 +19,32 @@ export function activate(context: vscode.ExtensionContext) {
     let disposable = vscode.commands.registerCommand('terraform-plan-summarizer.summarize', async () => {
         // Try to get content from clipboard or active editor
         let planOutput = '';
+        let source = '';
         
         try {
-            planOutput = await vscode.env.clipboard.readText();
-            if (!planOutput || !isPlanOutput(planOutput)) {
-                const editor = vscode.window.activeTextEditor;
-                if (editor) {
-                    const document = editor.document;
-                    planOutput = document.getText();
+            const editor = vscode.window.activeTextEditor;
+            if (editor) {
+                const selection = editor.selection;
+                planOutput = editor.document.getText(selection);
+                source = 'Selection';
+
+                if (!planOutput || !isPlanOutput(planOutput)) {
+                    planOutput = editor.document.getText();
+                    source = 'Current File';
+                    if (!isPlanOutput(planOutput)) {
+                        planOutput = await vscode.env.clipboard.readText();
+                        source = 'Clipboard';
+                        if (!planOutput || !isPlanOutput(planOutput)) {
+                            vscode.window.showErrorMessage('No valid Terraform plan found in selection, active editor, or clipboard.');
+                            return;
+                        }
+                    }
                 }
-                
-                if (!isPlanOutput(planOutput)) {
-                    vscode.window.showErrorMessage('No valid Terraform plan found in clipboard or active editor.');
+            } else {
+                source = 'Clipboard';
+                planOutput = await vscode.env.clipboard.readText();
+                if (!planOutput || !isPlanOutput(planOutput)) {
+                    vscode.window.showErrorMessage('No valid Terraform plan found in clipboard.');
                     return;
                 }
             }
@@ -54,7 +68,7 @@ export function activate(context: vscode.ExtensionContext) {
             // Debug info
             console.log('Found resources:', Object.keys(resourceDetails).length);
             
-            panel.webview.html = getWebviewContent(summary, resourceDetails);
+            panel.webview.html = getWebviewContent(summary, resourceDetails, source);
             
             // Handle messages from the webview
             panel.webview.onDidReceiveMessage(
@@ -314,7 +328,7 @@ function escapeRegExp(string: string): string {
 /**
  * Generate the HTML for the webview
  */
-function getWebviewContent(summary: string, resourceDetails: Record<string, ResourceDetail>): string {
+function getWebviewContent(summary: string, resourceDetails: Record<string, ResourceDetail>, source: string): string {
     return `<!DOCTYPE html>
     <html lang="en">
     <head>
@@ -374,6 +388,7 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
     </head>
     <body>
         <h1>Terraform Plan Summary</h1>
+        <p>From: ${source}</p>
         <div id="summary">
             ${summary}
         </div>
