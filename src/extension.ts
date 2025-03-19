@@ -83,19 +83,22 @@ export function activate(context: vscode.ExtensionContext) {
  * Check if text appears to be terraform plan output
  */
 function isPlanOutput(text: string): boolean {
-    return text.includes('Terraform will perform the following actions') || 
-           text.includes('No changes') ||
-           text.includes('Plan:') ||
-           (text.includes('resource') && 
-            (text.includes('will be created') || 
-             text.includes('will be updated') || 
-             text.includes('will be destroyed')));
+    return text.includes('Terraform will perform the following actions') ||
+        text.includes('No changes') ||
+        text.includes('Plan:') ||
+        (text.includes('resource') &&
+            (text.includes('will be created') ||
+                text.includes('will be updated') ||
+                text.includes('will be destroyed')));
 }
 
 /**
  * Parse the terraform plan output
  */
 function parsePlanOutput(planOutput: string): ParseResult {
+    // Remove leading spaces
+    planOutput = planOutput.replace(/^ {2}#/gm, '#');
+
     const createRegex = /# (.+?) will be created/g;
     const updateRegex = /# (.+?) will be updated in-place/g;
     const destroyRegex = /# (.+?) will be destroyed/g;
@@ -199,6 +202,9 @@ function extractResourceDetails(
     symbol: string,
     resourceDetails: Record<string, ResourceDetail>
 ): void {
+    // Add two spaces before resource details
+    planOutput = planOutput.replace(/^([+-~]) resource/gm, '  $1 resource');
+
     resourceAddresses.forEach(address => {
         // Escape the address for regex
         const escapedAddress = escapeRegExp(address);
