@@ -130,6 +130,9 @@ export function activate(context: vscode.ExtensionContext) {
                 editBuilder.replace(replaceRange, planOutput);
             });
 
+            // Go to top of the page
+            await vscode.commands.executeCommand('revealLine', { lineNumber: 0, at: 'top' });
+
             vscode.window.showInformationMessage('Terraform plan summarized in-place.');
 
         } catch (error) {
