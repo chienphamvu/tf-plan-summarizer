@@ -162,6 +162,7 @@ function parsePlanOutput(planOutput: string): ParseResult {
 
     // Process resources must be replaced
     extractResourceDetails(planOutput, replaceMatches, 'must be replaced', '+/-', resourceDetails);
+    extractResourceDetails(planOutput, replaceMatches, 'must be replaced', '-/+', resourceDetails);
     
     return { summary, resourceDetails };
 }
