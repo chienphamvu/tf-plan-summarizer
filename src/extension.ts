@@ -179,8 +179,8 @@ function extractResourceDetails(
 ): void {
     resourceAddresses.forEach(address => {
         // Escape the address for regex
-        const escapedAddress = address.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const escapedSymbol = symbol.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escapedAddress = escapeRegExp(address);
+        const escapedSymbol = escapeRegExp(symbol);
 
         // Create a pattern that looks for the specific block for this resource
         const pattern = new RegExp(
