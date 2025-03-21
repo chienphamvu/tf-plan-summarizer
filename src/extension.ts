@@ -211,6 +211,8 @@ function isPlanOutput(text: string): boolean {
         (text.includes('resource') &&
             (text.includes('will be created') ||
                 text.includes('will be updated') ||
+                text.includes('must be replaced') ||
+                text.includes('will be read') ||
                 text.includes('will be destroyed')));
 }
 
@@ -334,7 +336,7 @@ function extractResourceDetails(
 
         // Create a pattern that looks for the specific block for this resource
         const pattern = new RegExp(
-            `# ${escapedAddress} ${changeType}[\\s\\S]*?(${escapedSymbol})\\s+resource\\s+"([^"]+)"\\s+"([^"]+)"\\s+{([\\s\\S]*?)(?=(\n\\s {0,2}#|\nPlan\:|$))`,
+            `# ${escapedAddress} ${changeType}[\\s\\S]*?(${escapedSymbol})\\s+resource\\s+"([^"]+)"\\s+"([^"]+)"\\s+{([\\s\\S]*?)(?=(\n\\s{0,2}#|\nPlan\:|$))`,
             'i'
         );
 
