@@ -234,11 +234,11 @@ function parsePlanOutput(planOutput: string): ParseResult {
     let summary = '';
 
     if (destroyMatches.length > 0) {
-        summary += `<h2 class="destroy">${destroyMatches.length} TO BE DESTROYED</h2>\n`;
+        summary += `<div class="summary-header destroy" data-group="destroy"><h2 class="destroy">${destroyMatches.length} TO BE DESTROYED</h2></div>\n`;
         destroyMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy" data-address="${cleanedAddress}">- ${resource}</div>\n`;
+            summary += `<div class="resource destroy destroy-resource" data-address="${cleanedAddress}">- ${resource}</div>\n`;
         });
     }
     const replaceCreateBeforeDestroyMatches = replaceMatches.filter(resource => {
@@ -252,38 +252,38 @@ function parsePlanOutput(planOutput: string): ParseResult {
     });
 
     if (replaceCreateBeforeDestroyMatches.length > 0) {
-        summary += `<h2 class="destroy">${replaceCreateBeforeDestroyMatches.length} CREATE BEFORE DESTROY REPLACEMENT</h2>\n`;
+        summary += `<div class="summary-header destroy" data-group="replace-create"><h2 class="destroy">${replaceCreateBeforeDestroyMatches.length} CREATE BEFORE DESTROY REPLACEMENT</h2></div>\n`;
         replaceCreateBeforeDestroyMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy" data-address="${cleanedAddress}">+/- ${resource}</div>\n`;
+            summary += `<div class="resource destroy replace-create-resource" data-address="${cleanedAddress}">+/- ${resource}</div>\n`;
         });
     }
 
     if (replaceDestroyBeforeCreateMatches.length > 0) {
-        summary += `<h2 class="destroy">${replaceDestroyBeforeCreateMatches.length} DESTROY BEFORE CREATE REPLACEMENT</h2>\n`;
+        summary += `<div class="summary-header destroy" data-group="replace-destroy"><h2 class="destroy">${replaceDestroyBeforeCreateMatches.length} DESTROY BEFORE CREATE REPLACEMENT</h2></div>\n`;
         replaceDestroyBeforeCreateMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy" data-address="${cleanedAddress}">-/+ ${resource}</div>\n`;
+            summary += `<div class="resource destroy replace-destroy-resource" data-address="${cleanedAddress}">-/+ ${resource}</div>\n`;
         });
     }
 
     if (updateMatches.length > 0) {
-        summary += `<h2 class="update">${updateMatches.length} TO BE UPDATED</h2>\n`;
+        summary += `<div class="summary-header update" data-group="update"><h2 class="update">${updateMatches.length} TO BE UPDATED</h2></div>\n`;
         updateMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource update" data-address="${cleanedAddress}">~ ${resource}</div>\n`;
+            summary += `<div class="resource update update-resource" data-address="${cleanedAddress}">~ ${resource}</div>\n`;
         });
     }
 
     if (createMatches.length > 0) {
-        summary += `<h2 class="create">${createMatches.length} TO BE CREATED</h2>\n`;
+        summary += `<div class="summary-header create" data-group="create"><h2 class="create">${createMatches.length} TO BE CREATED</h2></div>\n`;
         createMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource create" data-address="${cleanedAddress}">+ ${resource}</div>\n`;
+            summary += `<div class="resource create create-resource" data-address="${cleanedAddress}">+ ${resource}</div>\n`;
         });
     }
     
@@ -427,6 +427,9 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
                 font-size: 0.8em;
                 color: #888;
             }
+            .summary-header {
+                cursor: pointer;
+            }
         </style>
     </head>
     <body>
@@ -437,46 +440,63 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
         </div>
         
         <script>
-            // For debugging purposes
             const vscode = acquireVsCodeApi();
-            
-            // Resource details from the extension
             const resourceDetails = ${JSON.stringify(resourceDetails)};
-            
-            // Log available resources
-            const resourceCount = Object.keys(resourceDetails).length;
-            vscode.postMessage({
-                command: 'debug',
-                text: 'Resource details available: ' + resourceCount
+
+            // Function to toggle resource details visibility
+            function toggleResourceDetails(group) {
+                const resourceElements = document.querySelectorAll('.' + group + '-resource');
+                resourceElements.forEach(resource => {
+                    const address = resource.getAttribute('data-address');
+                    let detailsElement = resource.nextElementSibling;
+
+                    if (!detailsElement || !detailsElement.classList.contains('resource-details')) {
+                        if (resourceDetails[address]) {
+                            detailsElement = document.createElement('pre');
+                            detailsElement.className = 'resource-details';
+                            detailsElement.textContent = resourceDetails[address].details;
+                            resource.after(detailsElement);
+                        } else {
+                            console.log('No details found for:', address);
+                            return;
+                        }
+                    }
+                    detailsElement.style.display = detailsElement.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+
+            // Add click event listeners to summary headers
+            document.querySelectorAll('.summary-header').forEach(header => {
+                header.addEventListener('click', function() {
+                    const group = this.getAttribute('data-group');
+                    toggleResourceDetails(group);
+                });
             });
-            
-            // Add click event listeners to all resources
-            document.querySelectorAll('.resource').forEach(element => {
-                element.addEventListener('click', function() {
+
+            // Add click event listeners to individual resources
+            document.querySelectorAll('.resource').forEach(resource => {
+                resource.addEventListener('click', function(event) {
+                    // Prevent the summary-header click from firing when clicking on a resource
+                    event.stopPropagation();
+
                     const address = this.getAttribute('data-address');
-                    console.log('Clicked on:', address);
-                    
-                    // Check if details are already showing
                     let detailsElement = this.nextElementSibling;
+
                     if (detailsElement && detailsElement.classList.contains('resource-details')) {
-                        // Toggle visibility
                         detailsElement.style.display = detailsElement.style.display === 'block' ? 'none' : 'block';
                     } else {
-                        // Create new details element
                         if (resourceDetails[address]) {
-                            console.log('Found details for:', address);
-                            const details = document.createElement('pre');  // Changed from div to pre
-                            details.className = 'resource-details';
-                            details.textContent = resourceDetails[address].details;
-                            details.style.display = 'block';
-                            this.after(details);
+                            detailsElement = document.createElement('pre');
+                            detailsElement.className = 'resource-details';
+                            detailsElement.textContent = resourceDetails[address].details;
+                            detailsElement.style.display = 'block'; // Set initial display to block
+                            this.after(detailsElement);
                         } else {
-                            console.log('No details found for:', address, 'Available:', Object.keys(resourceDetails));
+                            console.log('No details found for:', address);
                         }
                     }
                 });
             });
-            
         </script>
     </body>
     </html>`;
