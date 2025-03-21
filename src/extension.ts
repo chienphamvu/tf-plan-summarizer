@@ -154,6 +154,19 @@ export function activate(context: vscode.ExtensionContext) {
             // Go to top of the page
             await vscode.commands.executeCommand('revealLine', { lineNumber: 0, at: 'top' });
 
+            // Fold all lines that match "^# .*"
+            const document = editor.document;
+            for (let i = 0; i < document.lineCount; i++) {
+                const line = document.lineAt(i);
+                if (line.text.match(/^# .*/)) {
+                    editor.selection = new vscode.Selection(line.range.start, line.range.start);
+                    await vscode.commands.executeCommand('editor.fold', {
+                        levels: 1,
+                        direction: 'down'
+                    });
+                }
+            }
+
             vscode.window.showInformationMessage('Terraform plan summarized in-place.');
 
         } catch (error) {
