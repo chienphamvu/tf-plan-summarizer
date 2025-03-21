@@ -448,6 +448,19 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
             // Function to toggle resource details visibility
             function toggleResourceDetails(group) {
                 const resourceElements = document.querySelectorAll('.' + group + '-resource');
+                
+                // Determine if most elements are currently visible or hidden
+                let visibleCount = 0;
+                resourceElements.forEach(resource => {
+                    let detailsElement = resource.nextElementSibling;
+                    if (detailsElement && detailsElement.classList.contains('resource-details') && detailsElement.style.display === 'block') {
+                        visibleCount++;
+                    }
+                });
+
+                // Determine the target display state: if more than half are visible, collapse all; otherwise, expand all
+                const shouldExpand = visibleCount <= resourceElements.length / 2;
+
                 resourceElements.forEach(resource => {
                     const address = resource.getAttribute('data-address');
                     let detailsElement = resource.nextElementSibling;
@@ -457,13 +470,15 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
                             detailsElement = document.createElement('pre');
                             detailsElement.className = 'resource-details';
                             detailsElement.textContent = resourceDetails[address].details;
+                            detailsElement.style.display = shouldExpand ? 'block' : 'none';
                             resource.after(detailsElement);
                         } else {
                             console.log('No details found for:', address);
                             return;
                         }
+                    } else {
+                        detailsElement.style.display = shouldExpand ? 'block' : 'none';
                     }
-                    detailsElement.style.display = detailsElement.style.display === 'block' ? 'none' : 'block';
                 });
             }
 
