@@ -3,11 +3,18 @@
   "displayName": "tf-plan-summarizer",
   "description": "Summarize Terraform plan",
   "version": "0.0.1",
+  "publisher": "Chien Pham",
   "engines": {
     "vscode": "^1.98.0"
   },
   "categories": [
     "Other"
+  ],
+  "keywords": [
+    "terraform",
+    "tf",
+    "plan",
+    "summary"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
@@ -25,7 +32,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_USERNAME/YOUR_REPO_NAME"
+    "url": "https://github.com/chienphamvu/tf-plan-summarizer"
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
