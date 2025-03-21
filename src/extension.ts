@@ -467,7 +467,12 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
 
             // Add click event listeners to summary headers
             document.querySelectorAll('.summary-header').forEach(header => {
-                header.addEventListener('click', function() {
+                header.addEventListener('click', function(event) {
+                    // Check if text is being selected
+                    if (window.getSelection()?.toString()) {
+                        return; // Do nothing if text is selected
+                    }
+
                     const group = this.getAttribute('data-group');
                     toggleResourceDetails(group);
                 });
@@ -476,6 +481,11 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
             // Add click event listeners to individual resources
             document.querySelectorAll('.resource').forEach(resource => {
                 resource.addEventListener('click', function(event) {
+                    // Check if text is being selected
+                    if (window.getSelection()?.toString()) {
+                        return; // Do nothing if text is selected
+                    }
+
                     // Prevent the summary-header click from firing when clicking on a resource
                     event.stopPropagation();
 
