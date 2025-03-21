@@ -27,9 +27,3 @@ There are no settings for this extension.
 ## Known Issues
 
 -   None
-
-## Release Notes
-
-### 1.0.0
-
-Initial release of the Terraform Plan Summarizer.
