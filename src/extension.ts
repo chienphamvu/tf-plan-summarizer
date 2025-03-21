@@ -112,16 +112,18 @@ export function activate(context: vscode.ExtensionContext) {
 
             // Remove everything before and including "Terraform will perform the following actions"
             const startMarker = 'Terraform will perform the following actions:\n\n';
-            const startIndex = planOutput.indexOf(startMarker);
+            let startIndex = planOutput.indexOf(startMarker);
             if (startIndex !== -1) {
                 planOutput = planOutput.substring(startIndex + startMarker.length);
             }
 
-            // Remove everything after "Plan: x to add, x to change, x to destroy."
+            // Extract the "Plan: x to add, x to change, x to destroy." line
             const endMarkerRegex = /Plan: \d+ to add, \d+ to change, \d+ to destroy\..*/;
             const endMatch = planOutput.match(endMarkerRegex);
+            let planSummaryLine = '';
             if (endMatch) {
-                planOutput = planOutput.substring(0, endMatch.index! + endMatch[0].length);
+                planSummaryLine = endMatch[0];
+                planOutput = planOutput.substring(0, endMatch.index!);
             }
 
             // Remove leading spaces
@@ -144,6 +146,9 @@ export function activate(context: vscode.ExtensionContext) {
 
             // Add one space before data
             planOutput = planOutput.replace(/^ <= data/gm, '  <= data');
+
+            // Add the "Plan: x to add, x to change, x to destroy." line to the beginning
+            planOutput = planSummaryLine + '\n' + planOutput;
 
             const replaceRange = selection.isEmpty ? new vscode.Range(editor.document.positionAt(0), editor.document.positionAt(editor.document.getText().length)) : selection;
 
