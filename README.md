@@ -9,14 +9,13 @@ A Visual Studio Code extension to summarize Terraform plan outputs in a more rea
 
 ## Usage
 
-1.  Open a Terraform plan output in Visual Studio Code.
-2.  Run the `Terraform Plan Summarizer: Summarize` command from the command palette (Ctrl+Shift+P or Cmd+Shift+P).
+1.  Run the `Terraform Plan Summarizer: Summarize` command from the command palette (Ctrl+Shift+P or Cmd+Shift+P).
     *   The extension will attempt to read the plan from:
         *   The current text selection
         *   The current editor
         *   The clipboard
     *   The extension will display a summary in a webview panel.
-3.  Alternatively, use the `Terraform Plan Summarizer: Summarize In Place` command to format the plan directly in the editor.
+2.  Alternatively, use the `Terraform Plan Summarizer: Summarize In Place` command to format the plan directly in the editor.
     *   For this, the extension does not support to read the plan from the clipboard since it needs to do in-place replacement.
     *   This will reformat the current editor window to show a simplified plan with all details collapsed.
 
