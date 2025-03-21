@@ -121,9 +121,21 @@ export function activate(context: vscode.ExtensionContext) {
             const endMarkerRegex = /Plan: \d+ to add, \d+ to change, \d+ to destroy\..*/;
             const endMatch = planOutput.match(endMarkerRegex);
             let planSummaryLine = '';
+            let adds = 0;
+            let changes = 0;
+            let destroys = 0;
+
             if (endMatch) {
                 planSummaryLine = endMatch[0];
                 planOutput = planOutput.substring(0, endMatch.index!);
+
+                // Extract add, change, and destroy counts
+                const counts = planSummaryLine.match(/(\d+) to add, (\d+) to change, (\d+) to destroy/);
+                if (counts) {
+                    adds = parseInt(counts[1]);
+                    changes = parseInt(counts[2]);
+                    destroys = parseInt(counts[3]);
+                }
             }
 
             // Remove leading spaces
@@ -147,8 +159,14 @@ export function activate(context: vscode.ExtensionContext) {
             // Add one space before data
             planOutput = planOutput.replace(/^ <= data/gm, '  <= data');
 
-            // Add the "Plan: x to add, x to change, x to destroy." line to the beginning
-            planOutput = planSummaryLine + '\n' + planOutput;
+            // Add the formatted plan summary to the beginning
+            let formattedSummary = '==================\n';
+            formattedSummary += `    CREATE  ${adds}\n`;
+            formattedSummary += `    UPDATE  ${changes}\n`;
+            formattedSummary += `    DESTROY ${destroys}\n`;
+            formattedSummary += '==================\n';
+
+            planOutput = formattedSummary + planOutput;
 
             const replaceRange = selection.isEmpty ? new vscode.Range(editor.document.positionAt(0), editor.document.positionAt(editor.document.getText().length)) : selection;
 
