@@ -1,4 +1,8 @@
 import * as vscode from 'vscode';
+import { exec } from 'child_process';
+import * as util from 'util';
+
+const execAsync = util.promisify(exec);
 
 interface ResourceDetail {
     changeType: string;
@@ -20,7 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
         // Try to get content from clipboard or active editor
         let planOutput = '';
         let source = '';
-        
+
         try {
             const editor = vscode.window.activeTextEditor;
             if (editor) {
@@ -35,8 +39,15 @@ export function activate(context: vscode.ExtensionContext) {
                         planOutput = await vscode.env.clipboard.readText();
                         source = 'Clipboard';
                         if (!planOutput || !isPlanOutput(planOutput)) {
-                            vscode.window.showErrorMessage('No valid Terraform plan found in selection, active editor, or clipboard.');
-                            return;
+                            const filePath = editor.document.uri.fsPath;
+                            try {
+                                planOutput = await terraformShow(filePath);
+                                source = `${filePath}`;
+                            } catch (err) {
+                                // vscode.window.showErrorMessage(`Failed to execute terraform show: ${err instanceof Error ? err.message : String(err)}`);
+                                vscode.window.showErrorMessage('No valid Terraform plan found in selection, active editor, clipboard or current file as binary plan.');
+                                return;
+                            }
                         }
                     }
                 }
@@ -90,6 +101,20 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showErrorMessage(`Failed to parse plan: ${error instanceof Error ? error.message : String(error)}`);
         }
     });
+
+    async function terraformShow(filePath: string): Promise<string> {
+        try {
+            const cwd = require('path').dirname(filePath);
+            let { stdout, stderr } = await execAsync(`terraform show -no-color ${filePath}`, { cwd });
+            if (stderr) {
+                console.error(`stderr: ${stderr}`);
+            }
+            return stdout;
+        } catch (error) {
+            console.error(`exec error: ${error}`);
+            throw error;
+        }
+    }
 
     let disposableInPlace = vscode.commands.registerCommand('terraform-plan-summarizer.summarizeInPlace', async () => {
         const editor = vscode.window.activeTextEditor;
@@ -212,6 +237,7 @@ function isPlanOutput(text: string): boolean {
     return text.includes('Terraform will perform the following actions') ||
         text.includes('No changes') ||
         text.includes('Plan:') ||
+        text.includes('Changes to Outputs') ||
         (text.includes('resource') &&
             (text.includes('will be created') ||
                 text.includes('will be updated') ||
