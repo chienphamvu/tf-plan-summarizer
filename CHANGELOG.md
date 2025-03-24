@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.2.0
+
+- Add context menu for `.plan` or `.tfplan` files
+
 ## 0.1.1
 
 - Prevent wrap text if line is too long (webview)

@@ -2,7 +2,7 @@
   "name": "tf-plan-summarizer",
   "displayName": "tf-plan-summarizer",
   "description": "Summarize Terraform plan",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "publisher": "chienphamvu",
   "engines": {
     "vscode": "^1.98.0"
@@ -28,7 +28,16 @@
         "command": "terraform-plan-summarizer.summarizeInPlace",
         "title": "TF Plan Summarizer: Summarize In Place"
       }
-    ]
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "terraform-plan-summarizer.summarize",
+          "group": "navigation",
+          "when": "resourceExtname == .plan || resourceExtname == .tfplan"
+        }
+      ]
+    }
   },
   "repository": {
     "type": "git",
