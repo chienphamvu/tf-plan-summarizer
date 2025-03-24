@@ -146,6 +146,7 @@ export function activate(context: vscode.ExtensionContext) {
             planOutput = planOutput.replace(/^# (.+?) will be updated in-place/gm, '# UPDATE  $1');
             planOutput = planOutput.replace(/^# (.+?) will be read during apply/gm, '# READ    $1');
             planOutput = planOutput.replace(/^# (.+?) must be replaced/gm, '# REPLACE $1');
+            planOutput = planOutput.replace(/^# (.+?) will be destroyed/gm, '# DESTROY $1');
 
             // Add two spaces before resource details
             planOutput = planOutput.replace(/^([+-~]|\+\/\-|\-\/\+) resource/gm, '  $1 resource');
@@ -155,6 +156,9 @@ export function activate(context: vscode.ExtensionContext) {
 
             // Add two spaces before "depends on a resource or a module with changes pending"
             planOutput = planOutput.replace(/^# \(depends on a resource or a module with changes pending\)/gm, '  # (depends on a resource or a module with changes pending)');
+
+            // Add two spaces before "# (because key..."
+            planOutput = planOutput.replace(/^# \(because key/gm, '  # (because key');
 
             // Add one space before data
             planOutput = planOutput.replace(/^ <= data/gm, '  <= data');
