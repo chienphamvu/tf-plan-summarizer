@@ -3,6 +3,7 @@
 ## 0.2.0
 
 - Add context menu for `.plan` or `.tfplan` files
+- Group resource changes for in-place summary
 
 ## 0.1.1
 

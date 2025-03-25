@@ -190,53 +190,73 @@ export function activate(context: vscode.ExtensionContext) {
                 }
             });
 
-            // Build formatted summary
+            // Build formatted plan output
+            let planOutputFormatted = '';
+
             if (destroyResources.length > 0) {
-                formattedSummary += `    DESTROY ${destroyResources.length}\n`;
+                planOutputFormatted += "==================\n";
+                planOutputFormatted += `${destroyResources.length} DESTROY\n`;
+                planOutputFormatted += "==================";
+                destroyResources.forEach(detail => {
+                    planOutputFormatted += `\n# DESTROY ${detail.address}\n`;
+                    planOutputFormatted += detail.details + '\n';
+                });
             }
             if (replaceCreateResources.length > 0) {
-                formattedSummary += `    REPLACE_CREATE ${replaceCreateResources.length}\n`;
+                planOutputFormatted += "==================\n";
+                planOutputFormatted += `${replaceCreateResources.length} REPLACE_CREATE\n`;
+                planOutputFormatted += "==================";
+                replaceCreateResources.forEach(detail => {
+                    planOutputFormatted += `\n# REPLACE_CREATE ${detail.address}\n`;
+                    planOutputFormatted += detail.details + '\n';
+                });
             }
             if (replaceDestroyResources.length > 0) {
-                formattedSummary += `    REPLACE_DESTROY ${replaceDestroyResources.length}\n`;
+                planOutputFormatted += "==================\n";
+                planOutputFormatted += `${replaceDestroyResources.length} REPLACE_DESTROY\n`;
+                planOutputFormatted += "==================";
+                replaceDestroyResources.forEach(detail => {
+                    planOutputFormatted += `\n# REPLACE_DESTROY ${detail.address}\n`;
+                    planOutputFormatted += detail.details + '\n';
+                });
             }
             if (updateResources.length > 0) {
-                formattedSummary += `    UPDATE ${updateResources.length}\n`;
+                planOutputFormatted += "==================\n";
+                planOutputFormatted += `${updateResources.length} UPDATE\n`;
+                planOutputFormatted += "==================";
+                updateResources.forEach(detail => {
+                    planOutputFormatted += `\n# UPDATE ${detail.address}\n`;
+                    planOutputFormatted += detail.details + '\n';
+                });
             }
             if (createResources.length > 0) {
-                formattedSummary += `    CREATE ${createResources.length}\n`;
+                planOutputFormatted += "==================\n";
+                planOutputFormatted += `${createResources.length} CREATE\n`;
+                planOutputFormatted += "==================";
+                createResources.forEach(detail => {
+                    planOutputFormatted += `\n# CREATE ${detail.address}\n`;
+                    planOutputFormatted += detail.details + '\n';
+                });
             }
-            formattedSummary += '==================\n';
-
-            // Build formatted plan output
-            let planOutputFormatted = formattedSummary;
-
-            destroyResources.forEach(detail => {
-                planOutputFormatted += `\n# DESTROY ${detail.address}\n`;
-                planOutputFormatted += detail.details + '\n';
-            });
-            replaceCreateResources.forEach(detail => {
-                planOutputFormatted += `\n# REPLACE_CREATE ${detail.address}\n`;
-                planOutputFormatted += detail.details + '\n';
-            });
-            replaceDestroyResources.forEach(detail => {
-                planOutputFormatted += `\n# REPLACE_DESTROY ${detail.address}\n`;
-                planOutputFormatted += detail.details + '\n';
-            });
-            updateResources.forEach(detail => {
-                planOutputFormatted += `\n# UPDATE ${detail.address}\n`;
-                planOutputFormatted += detail.details + '\n';
-            });
-            createResources.forEach(detail => {
-                planOutputFormatted += `\n# CREATE ${detail.address}\n`;
-                planOutputFormatted += detail.details + '\n';
-            });
 
             const replaceRange = selection.isEmpty ? new vscode.Range(editor.document.positionAt(0), editor.document.positionAt(editor.document.getText().length)) : selection;
 
             await editor.edit(editBuilder => {
                 editBuilder.replace(replaceRange, planOutputFormatted);
             });
+
+            // Fold all lines that match "^# .*"
+            const document = editor.document;
+            for (let i = 0; i < document.lineCount; i++) {
+                const line = document.lineAt(i);
+                if (line.text.match(/^# .*/)) {
+                    editor.selection = new vscode.Selection(line.range.start, line.range.start);
+                    await vscode.commands.executeCommand('editor.fold', {
+                        levels: 1,
+                        direction: 'down'
+                    });
+                }
+            }
 
             // Move cursor to top
             await vscode.commands.executeCommand('revealLine', { lineNumber: 0, at: 'top' });
