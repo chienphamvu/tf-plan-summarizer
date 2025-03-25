@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.1.1
+
+- Prevent wrap text if line is too long (webview)
+
 ## 0.1.0
 
 - Add support for binary plan file

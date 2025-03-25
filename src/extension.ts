@@ -270,7 +270,7 @@ function parsePlanOutput(planOutput: string): ParseResult {
         destroyMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy destroy-resource" data-address="${cleanedAddress}">- ${resource}</div>\n`;
+            summary += `<div class="resource destroy destroy-resource" data-address="${cleanedAddress}" style="white-space: nowrap">- ${resource}</div>\n`;
         });
     }
     const replaceCreateBeforeDestroyMatches = replaceMatches.filter(resource => {
@@ -288,7 +288,7 @@ function parsePlanOutput(planOutput: string): ParseResult {
         replaceCreateBeforeDestroyMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy replace-create-resource" data-address="${cleanedAddress}">+/- ${resource}</div>\n`;
+            summary += `<div class="resource destroy replace-create-resource" data-address="${cleanedAddress}" style="white-space: nowrap">+/- ${resource}</div>\n`;
         });
     }
 
@@ -297,7 +297,7 @@ function parsePlanOutput(planOutput: string): ParseResult {
         replaceDestroyBeforeCreateMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy replace-destroy-resource" data-address="${cleanedAddress}">-/+ ${resource}</div>\n`;
+            summary += `<div class="resource destroy replace-destroy-resource" data-address="${cleanedAddress}" style="white-space: nowrap">-/+ ${resource}</div>\n`;
         });
     }
 
@@ -306,7 +306,7 @@ function parsePlanOutput(planOutput: string): ParseResult {
         updateMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource update update-resource" data-address="${cleanedAddress}">~ ${resource}</div>\n`;
+            summary += `<div class="resource update update-resource" data-address="${cleanedAddress}" style="white-space: nowrap">~ ${resource}</div>\n`;
         });
     }
 
@@ -315,7 +315,7 @@ function parsePlanOutput(planOutput: string): ParseResult {
         createMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource create create-resource" data-address="${cleanedAddress}">+ ${resource}</div>\n`;
+            summary += `<div class="resource create create-resource" data-address="${cleanedAddress}" style="white-space: nowrap">+ ${resource}</div>\n`;
         });
     }
     
