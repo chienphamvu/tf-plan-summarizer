@@ -9,6 +9,7 @@ interface ResourceDetail {
     symbol: string;
     resourceType: string;
     resourceName: string;
+    address: string;
     details: string;
 }
 
@@ -154,89 +155,89 @@ export function activate(context: vscode.ExtensionContext) {
             // Set syntax to Terraform
             vscode.languages.setTextDocumentLanguage(editor.document, 'terraform');
 
-            // Remove everything before and including "Terraform will perform the following actions"
-            const startMarker = 'Terraform will perform the following actions:\n\n';
-            let startIndex = planOutput.indexOf(startMarker);
-            if (startIndex !== -1) {
-                planOutput = planOutput.substring(startIndex + startMarker.length);
-            }
+            const { summary, resourceDetails } = parsePlanOutput(planOutput);
 
-            // Extract the "Plan: x to add, x to change, x to destroy." line
-            const endMarkerRegex = /Plan: \d+ to add, \d+ to change, \d+ to destroy\..*/;
-            const endMatch = planOutput.match(endMarkerRegex);
-            let planSummaryLine = '';
-            let adds = 0;
-            let changes = 0;
-            let destroys = 0;
-
-            if (endMatch) {
-                planSummaryLine = endMatch[0];
-                planOutput = planOutput.substring(0, endMatch.index!);
-
-                // Extract add, change, and destroy counts
-                const counts = planSummaryLine.match(/(\d+) to add, (\d+) to change, (\d+) to destroy/);
-                if (counts) {
-                    adds = parseInt(counts[1]);
-                    changes = parseInt(counts[2]);
-                    destroys = parseInt(counts[3]);
-                }
-            }
-
-            // Remove leading spaces
-            planOutput = planOutput.replace(/^ {2}#/gm, '#');
-
-            // Reorder "will be" phrases
-            planOutput = planOutput.replace(/^# (.+?) will be created/gm, '# CREATE  $1');
-            planOutput = planOutput.replace(/^# (.+?) will be updated in-place/gm, '# UPDATE  $1');
-            planOutput = planOutput.replace(/^# (.+?) will be read during apply/gm, '# READ    $1');
-            planOutput = planOutput.replace(/^# (.+?) must be replaced/gm, '# REPLACE $1');
-            planOutput = planOutput.replace(/^# (.+?) will be destroyed/gm, '# DESTROY $1');
-
-            // Add two spaces before resource details
-            planOutput = planOutput.replace(/^([+-~]|\+\/\-|\-\/\+) resource/gm, '  $1 resource');
-
-            // Add two spaces before "config refers to values not yet known"
-            planOutput = planOutput.replace(/^# \(config refers to values not yet known\)/gm, '  # (config refers to values not yet known)');
-
-            // Add two spaces before "depends on a resource or a module with changes pending"
-            planOutput = planOutput.replace(/^# \(depends on a resource or a module with changes pending\)/gm, '  # (depends on a resource or a module with changes pending)');
-
-            // Add two spaces before "# (because key..."
-            planOutput = planOutput.replace(/^# \(because key/gm, '  # (because key');
-
-            // Add one space before data
-            planOutput = planOutput.replace(/^ <= data/gm, '  <= data');
-
-            // Add the formatted plan summary to the beginning
+            // Format the summary for in-place display
             let formattedSummary = '==================\n';
-            formattedSummary += `    CREATE  ${adds}\n`;
-            formattedSummary += `    UPDATE  ${changes}\n`;
-            formattedSummary += `    DESTROY ${destroys}\n`;
+            let createCount = 0;
+            let updateCount = 0;
+            let destroyCount = 0;
+            let replaceCreateCount = 0;
+            let replaceDestroyCount = 0;
+
+            Object.values(resourceDetails).forEach(detail => {
+                switch (detail.changeType) {
+                    case 'will be created':
+                        createCount++;
+                        break;
+                    case 'will be updated in-place':
+                        updateCount++;
+                        break;
+                    case 'will be destroyed':
+                        destroyCount++;
+                        break;
+                    case 'must be replaced':
+                        if (detail.symbol === '+/-') {
+                            replaceCreateCount++;
+                        } else if (detail.symbol === '-/+') {
+                            replaceDestroyCount++;
+                        }
+                        break;
+                }
+            });
+
+            if (createCount > 0) {
+                formattedSummary += `    CREATE ${createCount}\n`;
+            }
+            if (updateCount > 0) {
+                formattedSummary += `    UPDATE ${updateCount}\n`;
+            }
+            if (destroyCount > 0) {
+                formattedSummary += `    DESTROY ${destroyCount}\n`;
+            }
+            if (replaceCreateCount > 0) {
+                formattedSummary += `    REPLACE_CREATE ${replaceCreateCount}\n`;
+            }
+            if (replaceDestroyCount > 0) {
+                formattedSummary += `    REPLACE_DESTROY ${replaceDestroyCount}\n`;
+            }
             formattedSummary += '==================\n';
 
-            planOutput = formattedSummary + planOutput;
+            // Extract resource details and format the plan output
+            let planOutputFormatted = formattedSummary;
+            Object.keys(resourceDetails).forEach(key => {
+                const detail = resourceDetails[key];
+                let changeType = '';
+                switch (detail.changeType) {
+                    case 'will be created':
+                        changeType = 'CREATE';
+                        break;
+                    case 'will be updated in-place':
+                        changeType = 'UPDATE';
+                        break;
+                    case 'will be destroyed':
+                        changeType = 'DESTROY';
+                        break;
+                    case 'must be replaced':
+                        if (detail.symbol === '+/-') {
+                            changeType = 'REPLACE_CREATE';
+                        } else if (detail.symbol === '-/+') {
+                            changeType = 'REPLACE_DESTROY';
+                        }
+                        break;
+                }
+                planOutputFormatted += `\n# ${changeType} ${detail.address}\n`;
+                planOutputFormatted += detail.details + '\n';
+            });
 
             const replaceRange = selection.isEmpty ? new vscode.Range(editor.document.positionAt(0), editor.document.positionAt(editor.document.getText().length)) : selection;
 
             await editor.edit(editBuilder => {
-                editBuilder.replace(replaceRange, planOutput);
+                editBuilder.replace(replaceRange, planOutputFormatted);
             });
 
             // Go to top of the page
             await vscode.commands.executeCommand('revealLine', { lineNumber: 0, at: 'top' });
-
-            // Fold all lines that match "^# .*"
-            const document = editor.document;
-            for (let i = 0; i < document.lineCount; i++) {
-                const line = document.lineAt(i);
-                if (line.text.match(/^# .*/)) {
-                    editor.selection = new vscode.Selection(line.range.start, line.range.start);
-                    await vscode.commands.executeCommand('editor.fold', {
-                        levels: 1,
-                        direction: 'down'
-                    });
-                }
-            }
 
             vscode.window.showInformationMessage('Terraform plan summarized in-place.');
 
@@ -395,7 +396,6 @@ function extractResourceDetails(
             const details = match[4];
             const resourceType = match[2];
             const resourceName = match[3];
-
             // Remove quotes from the key
             const cleanedAddress = address.replace(/"/g, '');
 
@@ -404,6 +404,7 @@ function extractResourceDetails(
                 symbol,
                 resourceType,
                 resourceName,
+                address: address,
                 details: `  ${symbol} resource "${resourceType}" "${resourceName}" {${details}`
             };
         } else {
