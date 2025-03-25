@@ -162,71 +162,73 @@ export function activate(context: vscode.ExtensionContext) {
             let createCount = 0;
             let updateCount = 0;
             let destroyCount = 0;
-            let replaceCreateCount = 0;
-            let replaceDestroyCount = 0;
+            // Group resources by change type
+            const createResources: ResourceDetail[] = [];
+            const updateResources: ResourceDetail[] = [];
+            const destroyResources: ResourceDetail[] = [];
+            const replaceCreateResources: ResourceDetail[] = [];
+            const replaceDestroyResources: ResourceDetail[] = [];
 
             Object.values(resourceDetails).forEach(detail => {
                 switch (detail.changeType) {
                     case 'will be created':
-                        createCount++;
+                        createResources.push(detail);
                         break;
                     case 'will be updated in-place':
-                        updateCount++;
+                        updateResources.push(detail);
                         break;
                     case 'will be destroyed':
-                        destroyCount++;
+                        destroyResources.push(detail);
                         break;
                     case 'must be replaced':
                         if (detail.symbol === '+/-') {
-                            replaceCreateCount++;
+                            replaceCreateResources.push(detail);
                         } else if (detail.symbol === '-/+') {
-                            replaceDestroyCount++;
+                            replaceDestroyResources.push(detail);
                         }
                         break;
                 }
             });
 
-            if (createCount > 0) {
-                formattedSummary += `    CREATE ${createCount}\n`;
+            // Build formatted summary
+            if (destroyResources.length > 0) {
+                formattedSummary += `    DESTROY ${destroyResources.length}\n`;
             }
-            if (updateCount > 0) {
-                formattedSummary += `    UPDATE ${updateCount}\n`;
+            if (replaceCreateResources.length > 0) {
+                formattedSummary += `    REPLACE_CREATE ${replaceCreateResources.length}\n`;
             }
-            if (destroyCount > 0) {
-                formattedSummary += `    DESTROY ${destroyCount}\n`;
+            if (replaceDestroyResources.length > 0) {
+                formattedSummary += `    REPLACE_DESTROY ${replaceDestroyResources.length}\n`;
             }
-            if (replaceCreateCount > 0) {
-                formattedSummary += `    REPLACE_CREATE ${replaceCreateCount}\n`;
+            if (updateResources.length > 0) {
+                formattedSummary += `    UPDATE ${updateResources.length}\n`;
             }
-            if (replaceDestroyCount > 0) {
-                formattedSummary += `    REPLACE_DESTROY ${replaceDestroyCount}\n`;
+            if (createResources.length > 0) {
+                formattedSummary += `    CREATE ${createResources.length}\n`;
             }
             formattedSummary += '==================\n';
 
-            // Extract resource details and format the plan output
+            // Build formatted plan output
             let planOutputFormatted = formattedSummary;
-            Object.keys(resourceDetails).forEach(key => {
-                const detail = resourceDetails[key];
-                let changeType = '';
-                switch (detail.changeType) {
-                    case 'will be created':
-                        changeType = 'CREATE';
-                        break;
-                    case 'will be updated in-place':
-                        changeType = 'UPDATE';
-                        break;
-                    case 'will be destroyed':
-                        changeType = 'DESTROY';
-                        break;
-                    case 'must be replaced':
-                        if (detail.symbol === '+/-') {
-                            changeType = 'REPLACE_CREATE';
-                        } else if (detail.symbol === '-/+') {
-                            changeType = 'REPLACE_DESTROY';
-                        }
-                        break;
-                }
-                planOutputFormatted += `\n# ${changeType} ${detail.address}\n`;
+
+            destroyResources.forEach(detail => {
+                planOutputFormatted += `\n# DESTROY ${detail.address}\n`;
+                planOutputFormatted += detail.details + '\n';
+            });
+            replaceCreateResources.forEach(detail => {
+                planOutputFormatted += `\n# REPLACE_CREATE ${detail.address}\n`;
+                planOutputFormatted += detail.details + '\n';
+            });
+            replaceDestroyResources.forEach(detail => {
+                planOutputFormatted += `\n# REPLACE_DESTROY ${detail.address}\n`;
+                planOutputFormatted += detail.details + '\n';
+            });
+            updateResources.forEach(detail => {
+                planOutputFormatted += `\n# UPDATE ${detail.address}\n`;
+                planOutputFormatted += detail.details + '\n';
+            });
+            createResources.forEach(detail => {
+                planOutputFormatted += `\n# CREATE ${detail.address}\n`;
                 planOutputFormatted += detail.details + '\n';
             });
 
@@ -236,7 +238,7 @@ export function activate(context: vscode.ExtensionContext) {
                 editBuilder.replace(replaceRange, planOutputFormatted);
             });
 
-            // Go to top of the page
+            // Move cursor to top
             await vscode.commands.executeCommand('revealLine', { lineNumber: 0, at: 'top' });
 
             vscode.window.showInformationMessage('Terraform plan summarized in-place.');
