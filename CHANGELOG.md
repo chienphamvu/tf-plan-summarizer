@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.3.2
+
+- Clean up package
+
 ## 0.3.1
 
 - Fix collapsing in Editor summary

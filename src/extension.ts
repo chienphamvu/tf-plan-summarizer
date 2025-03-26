@@ -68,9 +68,6 @@ export function activate(context: vscode.ExtensionContext) {
 
             const { summary, resourceDetails } = parsePlanOutput(planOutput);
 
-            let createCount = 0;
-            let updateCount = 0;
-            let destroyCount = 0;
             // Group resources by change type
             const createResources: ResourceDetail[] = [];
             const updateResources: ResourceDetail[] = [];
