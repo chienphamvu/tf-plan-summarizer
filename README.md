@@ -1,6 +1,6 @@
 # Terraform Plan Summarizer
 
-A Visual Studio Code extension to summarize Terraform plan outputs in a more readable way, especially if your plan is long and has a lot of changes.
+A Visual Studio Code extension to summarize Terraform plan outputs in a more readable way.
 
 ## Features
 
@@ -16,10 +16,9 @@ A Visual Studio Code extension to summarize Terraform plan outputs in a more rea
         *   The clipboard
         *   The current open file as a binary plan
     *   The extension will display a summary in a webview panel.
-2.  Alternatively, use the `TF Plan Summarizer: Summarize In Place` command to format the plan directly in the editor.
-    *   For this, the extension does not support to read the plan from the clipboard since it needs to do in-place replacement.
-    *   This will reformat the current editor window to show a simplified plan with all details collapsed.
-3. Context menu `TF Plan Summarizer: Summarize` also appears when right-clicking on `.plan` or `.tfplan` files.
+2.  Alternatively, use the `TF Plan Summarizer: Summarize In Editor` command to display the summary in a new editor tab.
+    *   This is especially helpful if you want to use `terraform` syntax highlighting and vscode editor features.
+3. Context menus are also available when right-clicking on `.plan` or `.tfplan` files.
 
 ## Extension Settings
 

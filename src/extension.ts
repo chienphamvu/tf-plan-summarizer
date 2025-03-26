@@ -62,7 +62,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    let disposableInPlace = vscode.commands.registerCommand('terraform-plan-summarizer.summarizeInPlace', async (uri: vscode.Uri) => {
+    let disposableInPlace = vscode.commands.registerCommand('terraform-plan-summarizer.summarizeInEditor', async (uri: vscode.Uri) => {
         try {
             const { planOutput, source, filePath } = await detectPlanSource(uri);
 
@@ -170,9 +170,6 @@ export function activate(context: vscode.ExtensionContext) {
 
             // Move cursor to top
             await vscode.commands.executeCommand('revealLine', { lineNumber: 0, at: 'top' });
-
-            vscode.window.showInformationMessage('Terraform plan summarized in-place.');
-
         } catch (error) {
             vscode.window.showErrorMessage(`Failed to summarize plan in-place: ${error instanceof Error ? error.message : String(error)}`);
         }

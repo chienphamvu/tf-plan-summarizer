@@ -25,8 +25,8 @@
         "title": "TF Plan Summarizer: Summarize"
       },
       {
-        "command": "terraform-plan-summarizer.summarizeInPlace",
-        "title": "TF Plan Summarizer: Summarize In Place"
+        "command": "terraform-plan-summarizer.summarizeInEditor",
+        "title": "TF Plan Summarizer: Summarize In Editor"
       }
     ],
     "menus": {
@@ -37,7 +37,7 @@
           "when": "resourceExtname == .plan || resourceExtname == .tfplan"
         },
         {
-          "command": "terraform-plan-summarizer.summarizeInPlace",
+          "command": "terraform-plan-summarizer.summarizeInEditor",
           "group": "navigation",
           "when": "resourceExtname == .plan || resourceExtname == .tfplan"
         }
