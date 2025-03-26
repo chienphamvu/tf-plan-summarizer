@@ -1,6 +1,6 @@
 # Change Log
 
-## 0.3.2
+## 0.3.3
 
 - Clean up package
 
