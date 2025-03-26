@@ -110,7 +110,7 @@ export function activate(context: vscode.ExtensionContext) {
                 planOutputFormatted += `${destroyResources.length} DESTROY\n`;
                 planOutputFormatted += "==================";
                 destroyResources.forEach(detail => {
-                    planOutputFormatted += `\n# DESTROY ${detail.address}\n`;
+                    planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
                     planOutputFormatted += detail.details + '\n';
                 });
             }
@@ -119,7 +119,7 @@ export function activate(context: vscode.ExtensionContext) {
                 planOutputFormatted += `${replaceCreateResources.length} REPLACE_CREATE\n`;
                 planOutputFormatted += "==================";
                 replaceCreateResources.forEach(detail => {
-                    planOutputFormatted += `\n# REPLACE_CREATE ${detail.address}\n`;
+                    planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
                     planOutputFormatted += detail.details + '\n';
                 });
             }
@@ -128,7 +128,7 @@ export function activate(context: vscode.ExtensionContext) {
                 planOutputFormatted += `${replaceDestroyResources.length} REPLACE_DESTROY\n`;
                 planOutputFormatted += "==================";
                 replaceDestroyResources.forEach(detail => {
-                    planOutputFormatted += `\n# REPLACE_DESTROY ${detail.address}\n`;
+                    planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
                     planOutputFormatted += detail.details + '\n';
                 });
             }
@@ -137,7 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
                 planOutputFormatted += `${updateResources.length} UPDATE\n`;
                 planOutputFormatted += "==================";
                 updateResources.forEach(detail => {
-                    planOutputFormatted += `\n# UPDATE ${detail.address}\n`;
+                    planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
                     planOutputFormatted += detail.details + '\n';
                 });
             }
@@ -146,7 +146,7 @@ export function activate(context: vscode.ExtensionContext) {
                 planOutputFormatted += `${createResources.length} CREATE\n`;
                 planOutputFormatted += "==================";
                 createResources.forEach(detail => {
-                    planOutputFormatted += `\n# CREATE ${detail.address}\n`;
+                    planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
                     planOutputFormatted += detail.details + '\n';
                 });
             }
@@ -159,7 +159,7 @@ export function activate(context: vscode.ExtensionContext) {
             const document = editor.document;
             for (let i = 0; i < document.lineCount; i++) {
                 const line = document.lineAt(i);
-                if (line.text.match(/^# .*/)) {
+                if (line.text.match(/^[\+|\-|\~|\-\/\+|\+\/\-]\s.*/)) {
                     editor.selection = new vscode.Selection(line.range.start, line.range.start);
                     await vscode.commands.executeCommand('editor.fold', {
                         levels: 1,
