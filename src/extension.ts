@@ -136,25 +136,59 @@ export function activate(context: vscode.ExtensionContext) {
         }
     }
 
-    let disposableInPlace = vscode.commands.registerCommand('terraform-plan-summarizer.summarizeInPlace', async () => {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            vscode.window.showErrorMessage('No active text editor.');
-            return;
-        }
+    let disposableInPlace = vscode.commands.registerCommand('terraform-plan-summarizer.summarizeInPlace', async (uri: vscode.Uri) => {
+        let planOutput = '';
+        let filePath: string | undefined = undefined;
 
-        const selection = editor.selection;
-        let planOutput = selection.isEmpty ? editor.document.getText() : editor.document.getText(selection);
+        if (uri && uri.fsPath) {
+            filePath = uri.fsPath;
+            try {
+                const fileContent = (await vscode.workspace.fs.readFile(uri)).toString();
+                if (isPlanOutput(fileContent)) {
+                    planOutput = fileContent;
+                } else {
+                    planOutput = await terraformShow(filePath);
+                }
+            } catch (err) {
+                vscode.window.showErrorMessage(`Failed to read file or execute terraform show: ${err instanceof Error ? err.message : String(err)}`);
+                return;
+            }
+        } else {
+            try {
+                const editor = vscode.window.activeTextEditor;
+                if (editor) {
+                    const selection = editor.selection;
+                    planOutput = editor.document.getText(selection);
 
-        if (!isPlanOutput(planOutput)) {
-            vscode.window.showErrorMessage('No valid Terraform plan found.');
-            return;
+                    if (!planOutput || !isPlanOutput(planOutput)) {
+                        planOutput = editor.document.getText();
+                        if (!isPlanOutput(planOutput)) {
+                            planOutput = await vscode.env.clipboard.readText();
+                            if (!planOutput || !isPlanOutput(planOutput)) {
+                                const filePath = editor.document.uri.fsPath;
+                                try {
+                                    planOutput = await terraformShow(filePath);
+                                } catch (err) {
+                                    vscode.window.showErrorMessage('No valid Terraform plan found in selection, active editor, clipboard or current file as binary plan.');
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    planOutput = await vscode.env.clipboard.readText();
+                    if (!planOutput || !isPlanOutput(planOutput)) {
+                        vscode.window.showErrorMessage('No valid Terraform plan found in clipboard.');
+                        return;
+                    }
+                }
+            } catch (error) {
+                vscode.window.showErrorMessage(`Failed to read content: ${error instanceof Error ? error.message : String(error)}`);
+                return;
+            }
         }
 
         try {
-            // Set syntax to Terraform
-            vscode.languages.setTextDocumentLanguage(editor.document, 'terraform');
-
             const { summary, resourceDetails } = parsePlanOutput(planOutput);
 
             // Format the summary for in-place display
@@ -239,11 +273,9 @@ export function activate(context: vscode.ExtensionContext) {
                 });
             }
 
-            const replaceRange = selection.isEmpty ? new vscode.Range(editor.document.positionAt(0), editor.document.positionAt(editor.document.getText().length)) : selection;
-
-            await editor.edit(editBuilder => {
-                editBuilder.replace(replaceRange, planOutputFormatted);
-            });
+            // Create a new text document
+            const doc = await vscode.workspace.openTextDocument({ content: planOutputFormatted, language: 'terraform' });
+            const editor = await vscode.window.showTextDocument(doc, vscode.ViewColumn.One, true);
 
             // Fold all lines that match "^# .*"
             const document = editor.document;
