@@ -117,7 +117,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
             if (replaceCreateResources.length > 0) {
                 planOutputFormatted += "==================\n";
-                planOutputFormatted += `${replaceCreateResources.length} REPLACE_CREATE\n`;
+                planOutputFormatted += `${replaceCreateResources.length} REPLACE: CREATE BEFORE DESTROY\n`;
                 planOutputFormatted += "==================";
                 replaceCreateResources.forEach(detail => {
                     const tainted = detail.changeType === 'is tainted, so must be replaced' ? '(tainted) ' : '';
@@ -127,7 +127,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
             if (replaceDestroyResources.length > 0) {
                 planOutputFormatted += "==================\n";
-                planOutputFormatted += `${replaceDestroyResources.length} REPLACE_DESTROY\n`;
+                planOutputFormatted += `${replaceDestroyResources.length} REPLACE: DESTROY BEFORE CREATE\n`;
                 planOutputFormatted += "==================";
                 replaceDestroyResources.forEach(detail => {
                     const tainted = detail.changeType === 'is tainted, so must be replaced' ? '(tainted) ' : '';
@@ -162,7 +162,7 @@ export function activate(context: vscode.ExtensionContext) {
             const document = editor.document;
             for (let i = 0; i < document.lineCount; i++) {
                 const line = document.lineAt(i);
-                if (line.text.match(/^[\+|\-|\~|\-\/\+|\+\/\-]\s.*/)) {
+                if (line.text.match(/^(\+|\-|\~|\-\/\+|\+\/\-)\s.*/)) {
                     editor.selection = new vscode.Selection(line.range.start, line.range.start);
                     await vscode.commands.executeCommand('editor.fold', {
                         levels: 1,

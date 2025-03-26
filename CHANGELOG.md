@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.3.1
+
+- Fix collapsing in Editor summary
+- Fix display of "is tainted, must be replaced" resources
+
 ## 0.3.0
 
 - Refactor inplace summary to read the same source as webview
