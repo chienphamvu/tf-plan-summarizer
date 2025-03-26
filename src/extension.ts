@@ -192,7 +192,10 @@ export function activate(context: vscode.ExtensionContext) {
             const { summary, resourceDetails } = parsePlanOutput(planOutput);
 
             // Format the summary for in-place display
-            let formattedSummary = '==================\n';
+            let formattedSummary = '======================\n';
+            formattedSummary += 'Terraform Plan Summary\n';
+            formattedSummary += '======================\n';
+            formattedSummary += `From: ${filePath ? filePath : 'Clipboard'}\n`;
             let createCount = 0;
             let updateCount = 0;
             let destroyCount = 0;
