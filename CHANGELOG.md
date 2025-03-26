@@ -1,5 +1,13 @@
 # Change Log
 
+## 0.3.0
+
+- read from the same source as webview
+- for inplace summary, open a new tab instead of doing replacement
+- put a "From: <source>" for inplace summary
+- put a title "Terraform plan Summary" above
+- TODO: Rename inplace summary to something else that makes sense
+
 ## 0.2.0
 
 - Add context menu for `.plan` or `.tfplan` files

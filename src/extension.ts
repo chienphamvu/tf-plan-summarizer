@@ -22,69 +22,9 @@ export function activate(context: vscode.ExtensionContext) {
     console.log('Terraform Plan Summarizer is now active!');
 
     let disposable = vscode.commands.registerCommand('terraform-plan-summarizer.summarize', async (uri: vscode.Uri) => {
-        // Try to get content from clipboard or active editor
-        let planOutput = '';
-        let source = '';
-        let filePath: string | undefined = undefined;
-
-        if (uri && uri.fsPath) {
-            filePath = uri.fsPath;
-            try {
-                const fileContent = (await vscode.workspace.fs.readFile(uri)).toString();
-                if (isPlanOutput(fileContent)) {
-                    planOutput = fileContent;
-                    source = `${filePath}`;
-                } else {
-                    planOutput = await terraformShow(filePath);
-                    source = `${filePath}`;
-                }
-            } catch (err) {
-                vscode.window.showErrorMessage(`Failed to read file or execute terraform show: ${err instanceof Error ? err.message : String(err)}`);
-                return;
-            }
-        } else {
-            try {
-                const editor = vscode.window.activeTextEditor;
-                if (editor) {
-                    const selection = editor.selection;
-                    planOutput = editor.document.getText(selection);
-                    source = 'Selection';
-
-                    if (!planOutput || !isPlanOutput(planOutput)) {
-                        planOutput = editor.document.getText();
-                        source = 'Current File';
-                        if (!isPlanOutput(planOutput)) {
-                            planOutput = await vscode.env.clipboard.readText();
-                            source = 'Clipboard';
-                            if (!planOutput || !isPlanOutput(planOutput)) {
-                                const filePath = editor.document.uri.fsPath;
-                                try {
-                                    planOutput = await terraformShow(filePath);
-                                    source = `${filePath}`;
-                                } catch (err) {
-                                    // vscode.window.showErrorMessage(`Failed to execute terraform show: ${err instanceof Error ? err.message : String(err)}`);
-                                    vscode.window.showErrorMessage('No valid Terraform plan found in selection, active editor, clipboard or current file as binary plan.');
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    source = 'Clipboard';
-                    planOutput = await vscode.env.clipboard.readText();
-                    if (!planOutput || !isPlanOutput(planOutput)) {
-                        vscode.window.showErrorMessage('No valid Terraform plan found in clipboard.');
-                        return;
-                    }
-                }
-            } catch (error) {
-                vscode.window.showErrorMessage(`Failed to read content: ${error instanceof Error ? error.message : String(error)}`);
-                return;
-            }
-        }
-
-
         try {
+            const { planOutput, source, filePath } = await detectPlanSource(uri);
+
             const panel = vscode.window.createWebviewPanel(
                 'terraformPlanSummary',
                 'Terraform Plan Summary',
@@ -94,12 +34,12 @@ export function activate(context: vscode.ExtensionContext) {
                     enableFindWidget: true
                 }
             );
-            
+
             const { summary, resourceDetails } = parsePlanOutput(planOutput);
-            
+
             // Debug info
             console.log('Found resources:', Object.keys(resourceDetails).length);
-            
+
             panel.webview.html = getWebviewContent(summary, resourceDetails, source);
             
             // Handle messages from the webview
@@ -122,80 +62,12 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    async function terraformShow(filePath: string): Promise<string> {
-        try {
-            const cwd = require('path').dirname(filePath);
-            let { stdout, stderr } = await execAsync(`terraform show -no-color ${filePath}`, { cwd });
-            if (stderr) {
-                console.error(`stderr: ${stderr}`);
-            }
-            return stdout;
-        } catch (error) {
-            console.error(`exec error: ${error}`);
-            throw error;
-        }
-    }
-
     let disposableInPlace = vscode.commands.registerCommand('terraform-plan-summarizer.summarizeInPlace', async (uri: vscode.Uri) => {
-        let planOutput = '';
-        let filePath: string | undefined = undefined;
-
-        if (uri && uri.fsPath) {
-            filePath = uri.fsPath;
-            try {
-                const fileContent = (await vscode.workspace.fs.readFile(uri)).toString();
-                if (isPlanOutput(fileContent)) {
-                    planOutput = fileContent;
-                } else {
-                    planOutput = await terraformShow(filePath);
-                }
-            } catch (err) {
-                vscode.window.showErrorMessage(`Failed to read file or execute terraform show: ${err instanceof Error ? err.message : String(err)}`);
-                return;
-            }
-        } else {
-            try {
-                const editor = vscode.window.activeTextEditor;
-                if (editor) {
-                    const selection = editor.selection;
-                    planOutput = editor.document.getText(selection);
-
-                    if (!planOutput || !isPlanOutput(planOutput)) {
-                        planOutput = editor.document.getText();
-                        if (!isPlanOutput(planOutput)) {
-                            planOutput = await vscode.env.clipboard.readText();
-                            if (!planOutput || !isPlanOutput(planOutput)) {
-                                const filePath = editor.document.uri.fsPath;
-                                try {
-                                    planOutput = await terraformShow(filePath);
-                                } catch (err) {
-                                    vscode.window.showErrorMessage('No valid Terraform plan found in selection, active editor, clipboard or current file as binary plan.');
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    planOutput = await vscode.env.clipboard.readText();
-                    if (!planOutput || !isPlanOutput(planOutput)) {
-                        vscode.window.showErrorMessage('No valid Terraform plan found in clipboard.');
-                        return;
-                    }
-                }
-            } catch (error) {
-                vscode.window.showErrorMessage(`Failed to read content: ${error instanceof Error ? error.message : String(error)}`);
-                return;
-            }
-        }
-
         try {
+            const { planOutput, source, filePath } = await detectPlanSource(uri);
+
             const { summary, resourceDetails } = parsePlanOutput(planOutput);
 
-            // Format the summary for in-place display
-            let formattedSummary = '======================\n';
-            formattedSummary += 'Terraform Plan Summary\n';
-            formattedSummary += '======================\n';
-            formattedSummary += `From: ${filePath ? filePath : 'Clipboard'}\n`;
             let createCount = 0;
             let updateCount = 0;
             let destroyCount = 0;
@@ -227,8 +99,11 @@ export function activate(context: vscode.ExtensionContext) {
                 }
             });
 
-            // Build formatted plan output
-            let planOutputFormatted = '';
+            // Format the summary for in-place display
+            let planOutputFormatted = '======================\n';
+            planOutputFormatted += 'Terraform Plan Summary\n\n';
+            planOutputFormatted += `From: ${source}\n`;
+            planOutputFormatted += '======================\n\n';
 
             if (destroyResources.length > 0) {
                 planOutputFormatted += "==================\n";
@@ -305,6 +180,79 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(disposable);
     context.subscriptions.push(disposableInPlace);
+}
+
+async function terraformShow(filePath: string): Promise<string> {
+    try {
+        const cwd = require('path').dirname(filePath);
+        let { stdout, stderr } = await execAsync(`terraform show -no-color ${filePath}`, { cwd });
+        if (stderr) {
+            console.error(`stderr: ${stderr}`);
+        }
+        return stdout;
+    } catch (error) {
+        console.error(`exec error: ${error}`);
+        throw error;
+    }
+}
+
+async function detectPlanSource(uri?: vscode.Uri): Promise<{ planOutput: string; source: string; filePath: string | undefined }> {
+    let planOutput = '';
+    let source = '';
+    let filePath: string | undefined = undefined;
+
+    if (uri && uri.fsPath) {
+        filePath = uri.fsPath;
+        try {
+            const fileContent = (await vscode.workspace.fs.readFile(uri)).toString();
+            if (isPlanOutput(fileContent)) {
+                planOutput = fileContent;
+                source = `${filePath}`;
+            } else {
+                planOutput = await terraformShow(filePath);
+                source = `${filePath}`;
+            }
+        } catch (err) {
+            throw new Error(`Failed to read file or execute terraform show: ${err instanceof Error ? err.message : String(err)}`);
+        }
+    } else {
+        try {
+            const editor = vscode.window.activeTextEditor;
+            if (editor) {
+                const selection = editor.selection;
+                planOutput = editor.document.getText(selection);
+                source = 'Selection';
+
+                if (!planOutput || !isPlanOutput(planOutput)) {
+                    planOutput = editor.document.getText();
+                    source = 'Current File';
+                    if (!isPlanOutput(planOutput)) {
+                        planOutput = await vscode.env.clipboard.readText();
+                        source = 'Clipboard';
+                        if (!planOutput || !isPlanOutput(planOutput)) {
+                            const filePath = editor.document.uri.fsPath;
+                            try {
+                                planOutput = await terraformShow(filePath);
+                                source = `${filePath}`;
+                            } catch (err) {
+                                throw new Error('No valid Terraform plan found in selection, active editor, clipboard or current file as binary plan.');
+                            }
+                        }
+                    }
+                }
+            } else {
+                source = 'Clipboard';
+                planOutput = await vscode.env.clipboard.readText();
+                if (!planOutput || !isPlanOutput(planOutput)) {
+                    throw new Error('No valid Terraform plan found in clipboard.');
+                }
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    return { planOutput, source, filePath };
 }
 
 /**
