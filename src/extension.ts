@@ -90,6 +90,7 @@ export function activate(context: vscode.ExtensionContext) {
                         destroyResources.push(detail);
                         break;
                     case 'must be replaced':
+                    case 'is tainted, so must be replaced':
                         if (detail.symbol === '+/-') {
                             replaceCreateResources.push(detail);
                         } else if (detail.symbol === '-/+') {
@@ -119,7 +120,8 @@ export function activate(context: vscode.ExtensionContext) {
                 planOutputFormatted += `${replaceCreateResources.length} REPLACE_CREATE\n`;
                 planOutputFormatted += "==================";
                 replaceCreateResources.forEach(detail => {
-                    planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
+                    const tainted = detail.changeType === 'is tainted, so must be replaced' ? '(tainted) ' : '';
+                    planOutputFormatted += `\n${detail.symbol} ${tainted}${detail.address}\n`;
                     planOutputFormatted += detail.details + '\n';
                 });
             }
@@ -128,7 +130,8 @@ export function activate(context: vscode.ExtensionContext) {
                 planOutputFormatted += `${replaceDestroyResources.length} REPLACE_DESTROY\n`;
                 planOutputFormatted += "==================";
                 replaceDestroyResources.forEach(detail => {
-                    planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
+                    const tainted = detail.changeType === 'is tainted, so must be replaced' ? '(tainted) ' : '';
+                    planOutputFormatted += `\n${detail.symbol} ${tainted}${detail.address}\n`;
                     planOutputFormatted += detail.details + '\n';
                 });
             }
@@ -155,7 +158,7 @@ export function activate(context: vscode.ExtensionContext) {
             const doc = await vscode.workspace.openTextDocument({ content: planOutputFormatted, language: 'terraform' });
             const editor = await vscode.window.showTextDocument(doc, vscode.ViewColumn.One, true);
 
-            // Fold all lines that match "^# .*"
+            // Fold all sections
             const document = editor.document;
             for (let i = 0; i < document.lineCount; i++) {
                 const line = document.lineAt(i);
@@ -278,12 +281,14 @@ function parsePlanOutput(planOutput: string): ParseResult {
     const createRegex = /# (.+?) will be created/g;
     const updateRegex = /# (.+?) will be updated in-place/g;
     const destroyRegex = /# (.+?) will be destroyed/g;
-    const replaceRegex = /# (.+?) must be replaced/g;
+    const replaceRegex = /# ([^ ]+?) must be replaced/g;
+    const replaceTaintedRegex = /# (.+?) is tainted, so must be replaced/g;
 
     const createMatches = Array.from(planOutput.matchAll(createRegex)).map(match => match[1]);
     const updateMatches = Array.from(planOutput.matchAll(updateRegex)).map(match => match[1]);
     const destroyMatches = Array.from(planOutput.matchAll(destroyRegex)).map(match => match[1]);
     const replaceMatches = Array.from(planOutput.matchAll(replaceRegex)).map(match => match[1]);
+    const replaceTaintedMatches = Array.from(planOutput.matchAll(replaceTaintedRegex)).map(match => match[1]);
 
     let summary = '';
 
@@ -299,27 +304,45 @@ function parsePlanOutput(planOutput: string): ParseResult {
         const regex = new RegExp(`# ${escapeRegExp(resource)} must be replaced\\n\\s*\\+/`);
         return regex.test(planOutput);
     });
+    const replaceTaintedCreateBeforeDestroyMatches = replaceTaintedMatches.filter(resource => {
+        const regex = new RegExp(`# ${escapeRegExp(resource)} is tainted, so must be replaced\\n\\s*\\+/`);
+        return regex.test(planOutput);
+    });
 
     const replaceDestroyBeforeCreateMatches = replaceMatches.filter(resource => {
         const regex = new RegExp(`# ${escapeRegExp(resource)} must be replaced\\n\\s*-/`);
         return regex.test(planOutput);
     });
+    const replaceTaintedDestroyBeforeCreateMatches = replaceTaintedMatches.filter(resource => {
+        const regex = new RegExp(`# ${escapeRegExp(resource)} is tainted, so must be replaced\\n\\s*-/`);
+        return regex.test(planOutput);
+    });
 
-    if (replaceCreateBeforeDestroyMatches.length > 0) {
-        summary += `<div class="summary-header destroy" data-group="replace-create"><h2 class="destroy">${replaceCreateBeforeDestroyMatches.length} CREATE BEFORE DESTROY REPLACEMENT</h2></div>\n`;
+    if (replaceCreateBeforeDestroyMatches.length > 0 || replaceTaintedCreateBeforeDestroyMatches.length > 0) {
+        summary += `<div class="summary-header destroy" data-group="replace-create"><h2 class="destroy">${replaceCreateBeforeDestroyMatches.length + replaceTaintedCreateBeforeDestroyMatches.length} CREATE BEFORE DESTROY REPLACEMENT</h2></div>\n`;
         replaceCreateBeforeDestroyMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
             summary += `<div class="resource destroy replace-create-resource" data-address="${cleanedAddress}" style="white-space: nowrap">+/- ${resource}</div>\n`;
         });
+        replaceTaintedCreateBeforeDestroyMatches.forEach(resource => {
+            // Remove quotes from data-address
+            const cleanedAddress = resource.replace(/"/g, '');
+            summary += `<div class="resource destroy replace-create-resource" data-address="${cleanedAddress}" style="white-space: nowrap">+/- (tainted) ${resource}</div>\n`;
+        });
     }
 
-    if (replaceDestroyBeforeCreateMatches.length > 0) {
-        summary += `<div class="summary-header destroy" data-group="replace-destroy"><h2 class="destroy">${replaceDestroyBeforeCreateMatches.length} DESTROY BEFORE CREATE REPLACEMENT</h2></div>\n`;
+    if (replaceDestroyBeforeCreateMatches.length > 0 || replaceTaintedDestroyBeforeCreateMatches.length > 0) {
+        summary += `<div class="summary-header destroy" data-group="replace-destroy"><h2 class="destroy">${replaceDestroyBeforeCreateMatches.length + replaceTaintedDestroyBeforeCreateMatches.length} DESTROY BEFORE CREATE REPLACEMENT</h2></div>\n`;
         replaceDestroyBeforeCreateMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
             summary += `<div class="resource destroy replace-destroy-resource" data-address="${cleanedAddress}" style="white-space: nowrap">-/+ ${resource}</div>\n`;
+        });
+        replaceTaintedDestroyBeforeCreateMatches.forEach(resource => {
+            // Remove quotes from data-address
+            const cleanedAddress = resource.replace(/"/g, '');
+            summary += `<div class="resource destroy replace-destroy-resource" data-address="${cleanedAddress}" style="white-space: nowrap">-/+ (tainted) ${resource}</div>\n`;
         });
     }
 
@@ -363,6 +386,13 @@ function parsePlanOutput(planOutput: string): ParseResult {
     });
     replaceDestroyBeforeCreateMatches.forEach(resource => {
         extractResourceDetails(planOutput, [resource], 'must be replaced', '-/+', resourceDetails);
+    });
+
+    replaceTaintedCreateBeforeDestroyMatches.forEach(resource => {
+        extractResourceDetails(planOutput, [resource], 'is tainted, so must be replaced', '+/-', resourceDetails);
+    });
+    replaceTaintedDestroyBeforeCreateMatches.forEach(resource => {
+        extractResourceDetails(planOutput, [resource], 'is tainted, so must be replaced', '-/+', resourceDetails);
     });
 
     return { summary, resourceDetails };
