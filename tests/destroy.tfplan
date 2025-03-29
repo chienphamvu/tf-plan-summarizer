@@ -11,13 +11,13 @@ Terraform will perform the following actions:
 
   # aws_instance.update_1 will be updated in-place
 ~ resource "aws_instance" "update_1" {
-        id            = "i-xxxxxxxxxxxxxxxxx" # (actual ID will vary)
+        id            = "i-xxxxxxxxxxxxxxxxx"
       ~ instance_type = "t2.micro" -> "t2.small"
     }
 
   # aws_instance.replace_1 must be replaced
 -/+ resource "aws_instance" "replace_1" {
-        id            = "i-yyyyyyyyyyyyyyyyy" # (actual ID will vary)
+        id            = "i-yyyyyyyyyyyyyyyyy"
       - ami           = "ami-0c55b516cb98f8221" -> null
       - instance_type = "t2.micro"      -> null
       - tags          = {
@@ -32,7 +32,7 @@ Terraform will perform the following actions:
 
   # aws_instance.replace_2 must be replaced
 +/- resource "aws_instance" "replace_2" {
-        id            = "i-zzzzzzzzzzzzzzzz" # (actual ID will vary)
+        id            = "i-zzzzzzzzzzzzzzzz"
       - ami           = "ami-0c55b516cb98f8221" -> null
       - instance_type = "t2.micro"      -> null
       - tags          = {
@@ -47,7 +47,7 @@ Terraform will perform the following actions:
 
   # aws_instance.destroy_1 will be destroyed
 - resource "aws_instance" "destroy_1" {
-        id            = "i-wwwwwwwwwwwww" # (actual ID will vary)
+        id            = "i-wwwwwwwwwwwww"
       - ami           = "ami-0c55b516cb98f8221" -> null
       - instance_type = "t2.micro"      -> null
       - tags          = {
@@ -57,7 +57,7 @@ Terraform will perform the following actions:
 
   # aws_instance.tainted_instance is tainted, so must be replaced
 -/+ resource "aws_instance" "tainted_instance" {
-        id            = "i-vvvvvvvvvvvvvvv" # (actual ID will vary)
+        id            = "i-vvvvvvvvvvvvvvv"
       - ami           = "ami-0c55b516cb98f8221" -> null
       - instance_type = "t2.micro"      -> null
       - tags          = {

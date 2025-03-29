@@ -16,7 +16,7 @@ Terraform will perform the following actions:
 
   # aws_instance.update_1 will be updated in-place
 ~ resource "aws_instance" "update_1" {
-        id            = "i-xxxxxxxxxxxxxxxxx" # (actual ID will vary)
+        id            = "i-xxxxxxxxxxxxxxxxx"
       ~ instance_type = "t2.micro" -> "t2.small"
     }
 

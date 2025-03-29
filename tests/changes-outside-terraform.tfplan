@@ -5,7 +5,7 @@ last "terraform apply" which may have affected this plan:
 
   # aws_instance.instance_1 has changed
 ~ resource "aws_instance" "instance_1" {
-        id            = "i-xxxxxxxxxxxxxxxxx" # (actual ID will vary)
+        id            = "i-xxxxxxxxxxxxxxxxx"
       ~ instance_type = "t2.micro" -> "t2.small"
     }
 
@@ -17,7 +17,7 @@ last "terraform apply" which may have affected this plan:
 
   # aws_instance.instance_deleted has been destroyed
 - resource "aws_instance" "instance_destroyed" {
-        id            = "i-yyyyyyyyyyyyyyyyy" # (actual ID will vary)
+      - id            = "i-yyyyyyyyyyyyyyyyy" -> null
       - ami           = "ami-0c55b516cb98f8221" -> null
       - instance_type = "t2.micro"      -> null
       - tags          = {
@@ -27,7 +27,7 @@ last "terraform apply" which may have affected this plan:
   
   # aws_instance.instance_deleted has been deleted
 - resource "aws_instance" "instance_deleted" {
-        id            = "i-yyyyyyyyyyyyyyyyy" # (actual ID will vary)
+      - id            = "i-yyyyyyyyyyyyyyyyy" -> null
       - ami           = "ami-0c44b516cb10f8123" -> null
       - instance_type = "t2.micro"      -> null
       - tags          = {

@@ -74,6 +74,7 @@ export function activate(context: vscode.ExtensionContext) {
             const destroyResources: ResourceDetail[] = [];
             const replaceCreateResources: ResourceDetail[] = [];
             const replaceDestroyResources: ResourceDetail[] = [];
+            const outsideChangeResources: ResourceDetail[] = [];
 
             Object.values(resourceDetails).forEach(detail => {
                 switch (detail.changeType) {
@@ -93,6 +94,12 @@ export function activate(context: vscode.ExtensionContext) {
                         } else if (detail.symbol === '-/+') {
                             replaceDestroyResources.push(detail);
                         }
+                        break;
+                    case 'has been changed':
+                    case 'has changed':
+                    case 'has been deleted':
+                    case 'has been destroyed':
+                        outsideChangeResources.push(detail);
                         break;
                 }
             });
@@ -146,6 +153,16 @@ export function activate(context: vscode.ExtensionContext) {
                 planOutputFormatted += `${createResources.length} CREATE\n`;
                 planOutputFormatted += "==================";
                 createResources.forEach(detail => {
+                    planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
+                    planOutputFormatted += detail.details + '\n';
+                });
+            }
+
+            if (outsideChangeResources.length > 0) {
+                planOutputFormatted += "==================\n";
+                planOutputFormatted += `${outsideChangeResources.length} CHANGES OUTSIDE TERRAFORM\n`;
+                planOutputFormatted += "==================";
+                outsideChangeResources.forEach(detail => {
                     planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
                     planOutputFormatted += detail.details + '\n';
                 });
@@ -287,6 +304,16 @@ function parsePlanOutput(planOutput: string): ParseResult {
     const replaceMatches = Array.from(planOutput.matchAll(replaceRegex)).map(match => match[1]);
     const replaceTaintedMatches = Array.from(planOutput.matchAll(replaceTaintedRegex)).map(match => match[1]);
 
+    const outsideChangeWasModifiedRegex = /# (.+?) has been changed/g;
+    const outsideChangeModifiedRegex = /# (.+?) has changed/g;
+    const outsideChangeDeletedRegex = /# (.+?) has been deleted/g;
+    const outsideChangeDestroyedRegex = /# (.+?) has been destroyed/g;
+
+    const outsideChangeWasModifiedMatches = Array.from(planOutput.matchAll(outsideChangeWasModifiedRegex)).map(match => match[1]);
+    const outsideChangeModifiedMatches = Array.from(planOutput.matchAll(outsideChangeModifiedRegex)).map(match => match[1]);
+    const outsideChangeDeletedMatches = Array.from(planOutput.matchAll(outsideChangeDeletedRegex)).map(match => match[1]);
+    const outsideChangeDestroyedMatches = Array.from(planOutput.matchAll(outsideChangeDestroyedRegex)).map(match => match[1]);
+
     let summary = '';
 
     if (destroyMatches.length > 0) {
@@ -360,11 +387,34 @@ function parsePlanOutput(planOutput: string): ParseResult {
             summary += `<div class="resource create create-resource" data-address="${cleanedAddress}" style="white-space: nowrap">+ ${resource}</div>\n`;
         });
     }
-    
+
+    if (outsideChangeWasModifiedMatches.length > 0 || outsideChangeModifiedMatches.length > 0 || outsideChangeDeletedMatches.length > 0 || outsideChangeDestroyedMatches.length > 0) {
+        summary += `<div class="summary-header outside-change" data-group="outside-change"><h2>${outsideChangeWasModifiedMatches.length + outsideChangeModifiedMatches.length + outsideChangeDeletedMatches.length + outsideChangeDestroyedMatches.length} CHANGES OUTSIDE TERRAFORM</h2></div>\n`;
+
+        outsideChangeWasModifiedMatches.forEach(resource => {
+            const cleanedAddress = resource.replace(/"/g, '');
+            summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
+        });
+
+        outsideChangeModifiedMatches.forEach(resource => {
+            const cleanedAddress = resource.replace(/"/g, '');
+            summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
+        });
+
+        outsideChangeDeletedMatches.forEach(resource => {
+            const cleanedAddress = resource.replace(/"/g, '');
+            summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
+        });
+
+        outsideChangeDestroyedMatches.forEach(resource => {
+            const cleanedAddress = resource.replace(/"/g, '');
+            summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
+        });
+    }
+
     if (summary === '') {
         summary = '<h2>No changes detected in plan</h2>';
     }
-    
     // Extract resource details
     const resourceDetails: Record<string, ResourceDetail> = {};
     
@@ -383,6 +433,20 @@ function parsePlanOutput(planOutput: string): ParseResult {
     });
     replaceDestroyBeforeCreateMatches.forEach(resource => {
         extractResourceDetails(planOutput, [resource], 'must be replaced', '-/+', resourceDetails);
+    });
+
+    // Process outside changes
+    outsideChangeWasModifiedMatches.forEach(resource => {
+        extractResourceDetails(planOutput, [resource], 'has been changed', '~', resourceDetails);
+    });
+    outsideChangeModifiedMatches.forEach(resource => {
+        extractResourceDetails(planOutput, [resource], 'has changed', '~', resourceDetails);
+    });
+    outsideChangeDeletedMatches.forEach(resource => {
+        extractResourceDetails(planOutput, [resource], 'has been deleted', '-', resourceDetails);
+    });
+    outsideChangeDestroyedMatches.forEach(resource => {
+        extractResourceDetails(planOutput, [resource], 'has been destroyed', '-', resourceDetails);
     });
 
     replaceTaintedCreateBeforeDestroyMatches.forEach(resource => {

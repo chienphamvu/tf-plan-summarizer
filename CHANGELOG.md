@@ -1,5 +1,9 @@
 # Change Log
 
+## <WIP>
+
+- Add support for changes outside of Terraform
+
 ## 0.3.3
 
 - Clean up package
