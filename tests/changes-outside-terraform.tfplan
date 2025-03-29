@@ -1,0 +1,77 @@
+Note: Objects have changed outside of Terraform
+
+Terraform detected the following changes made outside of Terraform since the
+last "terraform apply" which may have affected this plan:
+
+  # aws_instance.instance_1 has changed
+~ resource "aws_instance" "instance_1" {
+        id            = "i-xxxxxxxxxxxxxxxxx" # (actual ID will vary)
+      ~ instance_type = "t2.micro" -> "t2.small"
+    }
+
+  # aws_s3_bucket.bucket_1 has been changed
+~ resource "aws_s3_bucket" "bucket_1" {
+        id  = "my-bucket"
+      ~ acl = "private" -> "public-read"
+    }
+
+  # aws_instance.instance_deleted has been destroyed
+- resource "aws_instance" "instance_destroyed" {
+        id            = "i-yyyyyyyyyyyyyyyyy" # (actual ID will vary)
+      - ami           = "ami-0c55b516cb98f8221" -> null
+      - instance_type = "t2.micro"      -> null
+      - tags          = {
+          - "Name" = "DestroyedInstance"
+        }
+    }
+  
+  # aws_instance.instance_deleted has been deleted
+- resource "aws_instance" "instance_deleted" {
+        id            = "i-yyyyyyyyyyyyyyyyy" # (actual ID will vary)
+      - ami           = "ami-0c44b516cb10f8123" -> null
+      - instance_type = "t2.micro"      -> null
+      - tags          = {
+          - "Name" = "DeletedInstance"
+        }
+    }
+
+Unless you have made equivalent changes to your configuration, or ignored the
+relevant attributes using ignore_changes, the following plan may include
+actions to undo or respond to these changes.
+
+─────────────────────────────────────────────────────────────────────────────
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+  ~ update in-place
+  - destroy
+
+Terraform will perform the following actions:
+
+  # aws_instance.create_1 will be created
++ resource "aws_instance" "create_1" {
+      + ami           = "ami-0c55b516cb98f8221"
+      + instance_type = "t2.micro"
+      + tags          = {
+          + "Name" = "CreateInstance1"
+        }
+    }
+
+  # aws_instance.update_2 will be updated in-place
+~ resource "aws_instance" "update_2" {
+        id            = "i-zzzzzzzzzzzzzzzz" # (actual ID will vary)
+      ~ ami           = "ami-0a12b345c6d7e890f"
+    }
+
+  # aws_instance.destroy_2 will be destroyed
+- resource "aws_instance" "destroy_2" {
+        id            = "i-wwwwwwwwwwwww" # (actual ID will vary)
+      - ami           = "ami-0c55b516cb98f8221" -> null
+      - instance_type = "t2.micro"      -> null
+      - tags          = {
+          - "Name" = "DestroyInstance2"
+        }
+    }
+
+Plan: 1 to add, 2 to change, 2 to destroy.

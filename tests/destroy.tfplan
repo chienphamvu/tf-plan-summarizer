@@ -1,0 +1,73 @@
+Terraform will perform the following actions:
+
+  # aws_instance.create_1 will be created
++ resource "aws_instance" "create_1" {
+      + ami           = "ami-0c55b516cb98f8221"
+      + instance_type = "t2.micro"
+      + tags          = {
+          + "Name" = "CreateInstance1"
+        }
+    }
+
+  # aws_instance.update_1 will be updated in-place
+~ resource "aws_instance" "update_1" {
+        id            = "i-xxxxxxxxxxxxxxxxx" # (actual ID will vary)
+      ~ instance_type = "t2.micro" -> "t2.small"
+    }
+
+  # aws_instance.replace_1 must be replaced
+-/+ resource "aws_instance" "replace_1" {
+        id            = "i-yyyyyyyyyyyyyyyyy" # (actual ID will vary)
+      - ami           = "ami-0c55b516cb98f8221" -> null
+      - instance_type = "t2.micro"      -> null
+      - tags          = {
+          - "Name" = "ReplaceInstance1"
+        }
+      + ami           = "ami-0c55b516cb98f8221"
+      + instance_type = "t2.medium"
+      + tags          = {
+          + "Name" = "ReplaceInstance1_New"
+        }
+    }
+
+  # aws_instance.replace_2 must be replaced
++/- resource "aws_instance" "replace_2" {
+        id            = "i-zzzzzzzzzzzzzzzz" # (actual ID will vary)
+      - ami           = "ami-0c55b516cb98f8221" -> null
+      - instance_type = "t2.micro"      -> null
+      - tags          = {
+          - "Name" = "ReplaceInstance2"
+        }
+      + ami           = "ami-0c55b516cb98f8221"
+      + instance_type = "t2.large"
+      + tags          = {
+          + "Name" = "ReplaceInstance2_New"
+        }
+    }
+
+  # aws_instance.destroy_1 will be destroyed
+- resource "aws_instance" "destroy_1" {
+        id            = "i-wwwwwwwwwwwww" # (actual ID will vary)
+      - ami           = "ami-0c55b516cb98f8221" -> null
+      - instance_type = "t2.micro"      -> null
+      - tags          = {
+          - "Name" = "DestroyInstance1"
+        }
+    }
+
+  # aws_instance.tainted_instance is tainted, so must be replaced
+-/+ resource "aws_instance" "tainted_instance" {
+        id            = "i-vvvvvvvvvvvvvvv" # (actual ID will vary)
+      - ami           = "ami-0c55b516cb98f8221" -> null
+      - instance_type = "t2.micro"      -> null
+      - tags          = {
+          - "Name" = "TaintedInstance"
+        }
+      + ami           = "ami-0c55b516cb98f8221"
+      + instance_type = "t2.micro"
+      + tags          = {
+          + "Name" = "TaintedInstance_Tainted"
+        }
+    }
+
+Plan: 1 to add, 1 to change, 4 to destroy.

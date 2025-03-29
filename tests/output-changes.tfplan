@@ -1,0 +1,66 @@
+Terraform used the selected providers to generate the following execution plan. Resource actions are indicated with the following symbols:
+  + create
+  ~ update in-place
+  - destroy
+
+Terraform will perform the following actions:
+
+  # aws_instance.create_1 will be created
++ resource "aws_instance" "create_1" {
+      + ami           = "ami-0c55b516cb98f8221"
+      + instance_type = "t2.micro"
+      + tags          = {
+          + "Name" = "CreateInstance1"
+        }
+    }
+
+  # aws_instance.update_1 will be updated in-place
+~ resource "aws_instance" "update_1" {
+        id            = "i-xxxxxxxxxxxxxxxxx" # (actual ID will vary)
+      ~ instance_type = "t2.micro" -> "t2.small"
+    }
+
+Plan: 1 to add, 1 to change, 0 to destroy.
+
+Changes to Outputs:
+  ~ complex_output: {
+        - "key1" = "initial_value_1"
+        - "key2" = [
+            "item1",
+            "item2",
+        ]
+        + "key1" = "new_value_1"
+        + "key2" = [
+            "item1",
+            "item3",
+        ]
+        + "key3" = "added_value"
+    } -> {
+        - "key1" = "initial_value_1"
+        - "key2" = [
+            "item1",
+            "item2",
+        ]
+        + "key1" = "new_value_1"
+        + "key2" = [
+            "item1",
+            "item3",
+        ]
+        + "key3" = "added_value"
+    }
+  ~ list_output: [
+        - "old_item_1",
+        - "old_item_2",
+        + "new_item_1",
+        + "new_item_2",
+        + "new_item_3",
+    ] -> [
+        - "old_item_1",
+        - "old_item_2",
+        + "new_item_1",
+        + "new_item_2",
+        + "new_item_3",
+    ]
+  ~ string_output: "old_string" -> "new_string"
+
+Plan: 1 to add, 2 to change, 1 to destroy.

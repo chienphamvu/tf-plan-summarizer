@@ -1,0 +1,86 @@
+Terraform will perform the following actions:
+
+  # aws_instance.create_1 will be created
++ resource "aws_instance" "create_1" {
+      + ami           = "ami-0c55b516cb98f8221"
+      + instance_type = "t2.micro"
+      + tags          = {
+          + "Name" = "CreateInstance1"
+        }
+    }
+
+  # aws_instance.create_2 will be created
++ resource "aws_instance" "create_2" {
+      + ami           = "ami-0c55b516cb98f8221"
+      + instance_type = "t2.micro"
+      + tags          = {
+          + "Name" = "CreateInstance2"
+        }
+    }
+
+  # aws_instance.create_3 will be created
++ resource "aws_instance" "create_3" {
+      + ami           = "ami-0c55b516cb98f8221"
+      + instance_type = "t2.micro"
+      + tags          = {
+          + "Name" = "CreateInstance3"
+        }
+    }
+
+  # aws_instance.update_1 will be updated in-place
+~ resource "aws_instance" "update_1" {
+        id            = "i-xxxxxxxxxxxxxxxxx" # (actual ID will vary)
+      ~ instance_type = "t2.micro" -> "t2.small"
+    }
+
+  # aws_instance.update_2 will be updated in-place
+~ resource "aws_instance" "update_2" {
+        id            = "i-yyyyyyyyyyyyyyyyy" # (actual ID will vary)
+      ~ ami           = "ami-0c55b516cb98f8221" -> "ami-0a12b345c6d7e890f"
+    }
+
+  # aws_security_group.update_3 will be updated in-place
+~ resource "aws_security_group" "update_3" {
+        id = "sg-zzzzzzzzzzzzzzzz" # (actual ID will vary)
+      ~ ingress {
+          ~ cidr_blocks = [
+              "0.0.0.0/0",
+            ] -> [
+              "10.0.0.0/16",
+            ]
+        }
+    }
+
+  # aws_s3_bucket.update_4 will be updated in-place
+~ resource "aws_s3_bucket" "update_4" {
+        id  = "my-bucket"
+      ~ acl = "private" -> "public-read"
+    }
+
+  # aws_vpc.update_5 will be updated in-place
+~ resource "aws_vpc" "update_5" {
+        id         = "vpc-aaaaaaaaaaaaaaa" # (actual ID will vary)
+      ~ cidr_block = "10.0.0.0/16" -> "192.168.0.0/16"
+    }
+
+  # aws_instance.destroy_1 will be destroyed
+  - resource "aws_instance" "destroy_1" {
+        id            = "i-wwwwwwwwwwwww" # (actual ID will vary)
+      - ami           = "ami-0c55b516cb98f8221" -> null
+      - instance_type = "t2.micro"      -> null
+      - tags          = {
+          - "Name" = "DestroyInstance1"
+        }
+    }
+
+  # aws_instance.destroy_2 will be destroyed
+- resource "aws_instance" "destroy_2" {
+        id            = "i-xxxxxxxxxxxxxxxxx" # (actual ID will vary)
+      - ami           = "ami-0c55b516cb98f8221" -> null
+      - instance_type = "t2.micro"      -> null
+      - tags          = {
+          - "Name" = "DestroyInstance2"
+        }
+    }
+
+Plan: 3 to add, 5 to change, 2 to destroy.
