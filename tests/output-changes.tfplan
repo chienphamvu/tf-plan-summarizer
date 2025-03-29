@@ -23,44 +23,40 @@ Terraform will perform the following actions:
 Plan: 1 to add, 1 to change, 0 to destroy.
 
 Changes to Outputs:
-  ~ complex_output: {
-        - "key1" = "initial_value_1"
-        - "key2" = [
-            "item1",
-            "item2",
-        ]
-        + "key1" = "new_value_1"
-        + "key2" = [
-            "item1",
-            "item3",
-        ]
-        + "key3" = "added_value"
-    } -> {
-        - "key1" = "initial_value_1"
-        - "key2" = [
-            "item1",
-            "item2",
-        ]
-        + "key1" = "new_value_1"
-        + "key2" = [
-            "item1",
-            "item3",
-        ]
-        + "key3" = "added_value"
-    }
-  ~ list_output: [
-        - "old_item_1",
-        - "old_item_2",
-        + "new_item_1",
-        + "new_item_2",
-        + "new_item_3",
-    ] -> [
-        - "old_item_1",
-        - "old_item_2",
-        + "new_item_1",
-        + "new_item_2",
-        + "new_item_3",
+~ complex_output = {
+    - "key1" = "initial_value_1"
+    - "key2" = [
+        "item1",
+        "item2",
     ]
-  ~ string_output: "old_string" -> "new_string"
-
-Plan: 1 to add, 2 to change, 1 to destroy.
+    - "key1" = "new_value_1"
+    - "key2" = [
+        "item1",
+        "item3",
+    ]
+    + "key3" = "added_value"
+  } -> (known after apply)
+~ list_output    = [
+    - "old_item_1",
+    - "old_item_2",
+  ] -> (known after apply)
++ list_output_added    = [
+    "new_item_1",
+    "new_item_2",
+    "new_item_3",
+  ]
+~ string_output  = "old_string" -> "new_string"
+- string_output_deleted  = "deleted_string"
++ string_output_created  = "created_string"
+- string_output_deleted_two  = "deleted_string"
+╷
+│ Warning: Resource targeting is in effect
+│ 
+│ You are creating a plan with the -target option, which means that the
+│ result of this plan may not represent all of the changes requested by the
+│ current configuration.
+│ 
+│ The -target option is not for routine use, and is provided only for
+│ exceptional situations such as recovering from errors or mistakes, or when
+│ Terraform specifically suggests to use it as part of an error message.
+╵

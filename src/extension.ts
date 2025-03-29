@@ -75,9 +75,13 @@ export function activate(context: vscode.ExtensionContext) {
             const replaceCreateResources: ResourceDetail[] = [];
             const replaceDestroyResources: ResourceDetail[] = [];
             const outsideChangeResources: ResourceDetail[] = [];
+            const outputChangeResources: ResourceDetail[] = [];
 
             Object.values(resourceDetails).forEach(detail => {
                 switch (detail.changeType) {
+                    case 'output change':
+                        outputChangeResources.push(detail);
+                        break;
                     case 'will be created':
                         createResources.push(detail);
                         break;
@@ -155,6 +159,35 @@ export function activate(context: vscode.ExtensionContext) {
                 createResources.forEach(detail => {
                     planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
                     planOutputFormatted += detail.details + '\n';
+                });
+            }
+
+            if (outputChangeResources.length > 0) {
+                planOutputFormatted += "==================\n";
+                planOutputFormatted += `${outputChangeResources.length} OUTPUT CHANGES\n`;
+                planOutputFormatted += "==================";
+
+                const orderedSymbols = ['-', '~', '+'];
+
+                orderedSymbols.forEach(symbol => {
+                    outputChangeResources.forEach(detail => {
+                        if (detail.symbol === symbol) {
+                            let outputDetails = detail.details;
+                            let outputName = detail.address.replace('output.', '');
+                            if (outputDetails.startsWith('{')) {
+                                outputDetails = outputDetails.substring(1);
+                                planOutputFormatted += `\n${detail.symbol} ${outputName} = {\n`;
+                                planOutputFormatted += outputDetails;
+                            } else if (outputDetails.startsWith('[')) {
+                                outputDetails = outputDetails.substring(1);
+                                planOutputFormatted += `\n${detail.symbol} ${outputName} = [\n`;
+                                planOutputFormatted += outputDetails;
+                            }
+                            else {
+                                planOutputFormatted += `\n${detail.symbol} ${outputName} = ${outputDetails}`;
+                            }
+                        }
+                    });
                 });
             }
 
@@ -292,6 +325,11 @@ function parsePlanOutput(planOutput: string): ParseResult {
     // Remove leading spaces
     planOutput = planOutput.replace(/^ {2}#/gm, '#');
 
+    const outputResourceDetails: Record<string, ResourceDetail> = {};
+
+    const outputChangesRegex = /Changes to Outputs:\n([\s\S]*?)(?=\nTerraform will perform the following actions:|\nNote: Objects have changed outside of Terraform|\nPlan:|$)/g;
+    const outputChangesMatches = outputChangesRegex.exec(planOutput);
+
     const createRegex = /# (.+?) will be created/g;
     const updateRegex = /# (.+?) will be updated in-place/g;
     const destroyRegex = /# (.+?) will be destroyed/g;
@@ -412,9 +450,78 @@ function parsePlanOutput(planOutput: string): ParseResult {
         });
     }
 
+    // Handle Output changes
+    if (outputChangesMatches && outputChangesMatches[1]) {
+        const changes = outputChangesMatches[1].trim().split('\n');
+
+        let currentOutput = '';
+
+        changes.forEach(change => {
+            const outputChangeRegex = /^([\+\-\~])\s+([^=]+?)\s*=\s*(.*)$/;
+            const outputChangeMatch = change.match(outputChangeRegex);
+
+            if (outputChangeMatch) {
+                const symbol = outputChangeMatch[1];
+                const outputName = outputChangeMatch[2].trim();
+                let details = outputChangeMatch[3].trim();
+                const cleanedOutputName = outputName.replace(/"/g, '');
+                currentOutput = cleanedOutputName;
+
+                if (details.startsWith('[') || details.startsWith('{')) {
+                    outputResourceDetails[`output.${cleanedOutputName}`] = {
+                        changeType: 'output change',
+                        symbol: symbol,
+                        resourceType: 'output',
+                        resourceName: cleanedOutputName,
+                        address: `output.${cleanedOutputName}`,
+                        details: details.startsWith('[') ? '[' : '{'
+                    };
+                } else {
+                    outputResourceDetails[`output.${cleanedOutputName}`] = {
+                        changeType: 'output change',
+                        symbol: symbol,
+                        resourceType: 'output',
+                        resourceName: cleanedOutputName,
+                        address: `output.${cleanedOutputName}`,
+                        details: details
+                    };
+                }
+            } else if (currentOutput) {
+                if (change.startsWith(' ')) {
+                    if (outputResourceDetails[`output.${currentOutput}`].details === "[" || outputResourceDetails[`output.${currentOutput}`].details === "{") {
+                        // prevent the first redundant new line
+                        outputResourceDetails[`output.${currentOutput}`].details += change;
+                    } else {
+                        outputResourceDetails[`output.${currentOutput}`].details += '\n' + change;
+                    }
+                } else {
+                    currentOutput = '';
+                }
+            }
+        });
+
+        summary += `<div class="summary-header output-change" data-group="output-change"><h2>CHANGES TO OUTPUTS</h2></div>\n`;
+        const orderedSymbols = ['-', '~', '+'];
+
+        orderedSymbols.forEach(symbol => {
+            Object.keys(outputResourceDetails).forEach(key => {
+                if (outputResourceDetails[key].changeType === 'output change' && outputResourceDetails[key].symbol === symbol) {
+                    const resource = outputResourceDetails[key];
+                    const type = resource.details.startsWith('[') || resource.details.startsWith('{') ? (resource.details.startsWith('[') ? 'array' : 'map') : '';
+                    if (type) {
+                        summary += `<div class="resource output-change-resource" data-address="${resource.address}" data-output-name="${resource.resourceName}" data-output-type="${type}" style="white-space: nowrap"><span class="${getChangeClass(symbol)}">${symbol}</span> ${resource.resourceName} = ${type === "array" ? "[" : "{"}...${type === "array" ? "]" : "}"}</div>\n`;
+                    } else {
+                        summary += `<div class="resource no-hover" style="white-space: nowrap"><span class="${getChangeClass(symbol)}">${symbol}</span> ${resource.resourceName} = ${resource.details}</div>\n`;
+                    }
+                }
+            });
+        });
+    }
+
     if (summary === '') {
         summary = '<h2>No changes detected in plan</h2>';
     }
+
     // Extract resource details
     const resourceDetails: Record<string, ResourceDetail> = {};
     
@@ -455,6 +562,8 @@ function parsePlanOutput(planOutput: string): ParseResult {
     replaceTaintedDestroyBeforeCreateMatches.forEach(resource => {
         extractResourceDetails(planOutput, [resource], 'is tainted, so must be replaced', '-/+', resourceDetails);
     });
+
+    Object.assign(resourceDetails, outputResourceDetails);
 
     return { summary, resourceDetails };
 }
@@ -504,6 +613,19 @@ function extractResourceDetails(
             console.log(`Failed to find details for ${address}`);
         }
     });
+}
+
+function getChangeClass(symbol: string): string {
+    switch (symbol) {
+        case '+':
+            return 'create';
+        case '~':
+            return 'update';
+        case '-':
+            return 'destroy';
+        default:
+            return '';
+    }
 }
 
 /**
@@ -557,6 +679,10 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
             .resource:hover {
                 background-color: var(--vscode-list-hoverBackground);
             }
+            .resource.no-hover:hover {
+                background-color: transparent;
+                cursor: default;
+            }
             .resource-details {
                 display: none;
                 background-color: var(--vscode-editor-background);
@@ -566,6 +692,9 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
                 font-family: monospace;
                 white-space: pre-wrap;
                 overflow-x: auto;
+            }
+            .output-resource-details {
+                padding: 0 10px 10px 10px;
             }
             .debug-info {
                 margin-top: 20px;
@@ -607,20 +736,47 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
                 resourceElements.forEach(resource => {
                     const address = resource.getAttribute('data-address');
                     let detailsElement = resource.nextElementSibling;
+                    const isOutput = resource.dataset.outputType === 'array' || resource.dataset.outputType === 'map';
 
                     if (!detailsElement || !detailsElement.classList.contains('resource-details')) {
                         if (resourceDetails[address]) {
                             detailsElement = document.createElement('pre');
-                            detailsElement.className = 'resource-details';
-                            detailsElement.textContent = resourceDetails[address].details;
+                            detailsElement.className = 'resource-details' + (isOutput ? ' output-resource-details' : '');
+                            let detailsText = resourceDetails[address].details;
+                            if (isOutput && (detailsText.startsWith('[') || detailsText.startsWith('{'))) {
+                                detailsText = detailsText.substring(1);
+                            }
+                            detailsElement.textContent = detailsText;
                             detailsElement.style.display = shouldExpand ? 'block' : 'none';
                             resource.after(detailsElement);
+
+                            // Update the resource text based on the display state
+                            if (isOutput) {
+                                if (shouldExpand) {
+                                    resource.innerHTML = resource.innerHTML.replace(' = {...}', ' = {');
+                                    resource.innerHTML = resource.innerHTML.replace(' = [...]', ' = [');
+                                } else {
+                                    resource.innerHTML = resource.innerHTML.replace(' = {', ' = {...}');
+                                    resource.innerHTML = resource.innerHTML.replace(' = [', ' = [...]');
+                                }
+                            }
                         } else {
                             console.log('No details found for:', address);
                             return;
                         }
                     } else {
                         detailsElement.style.display = shouldExpand ? 'block' : 'none';
+
+                        // Update the resource text based on the display state
+                        if (isOutput) {
+                            if (shouldExpand) {
+                                resource.innerHTML = resource.innerHTML.replace(' = {...}', ' = {');
+                                resource.innerHTML = resource.innerHTML.replace(' = [...]', ' = [');
+                            } else {
+                                resource.innerHTML = resource.innerHTML.replace(' = {', ' = {...}');
+                                resource.innerHTML = resource.innerHTML.replace(' = [', ' = [...]');
+                            }
+                        }
                     }
                 });
             }
@@ -651,16 +807,37 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
 
                     const address = this.getAttribute('data-address');
                     let detailsElement = this.nextElementSibling;
+                    const isOutput = this.dataset.outputType === 'array' || this.dataset.outputType === 'map';
 
                     if (detailsElement && detailsElement.classList.contains('resource-details')) {
                         detailsElement.style.display = detailsElement.style.display === 'block' ? 'none' : 'block';
+                        if (detailsElement.style.display === 'block') {
+                            // If details are shown, remove the "..."
+                            if (this.dataset.outputType === 'array' || this.dataset.outputType === 'map') {
+                                this.innerHTML = this.innerHTML.replace(' = {...}', ' = {');
+                                this.innerHTML = this.innerHTML.replace(' = [...]', ' = [');
+                            }
+                        } else {
+                            // If details are hidden, add the "..." back
+                            this.innerHTML = this.innerHTML.replace(' = [', ' = [...]');
+                            this.innerHTML = this.innerHTML.replace(' = {', ' = {...}');
+                        }
                     } else {
                         if (resourceDetails[address]) {
                             detailsElement = document.createElement('pre');
-                            detailsElement.className = 'resource-details';
-                            detailsElement.textContent = resourceDetails[address].details;
+                            detailsElement.className = 'resource-details' + (isOutput ? ' output-resource-details' : '');
+                            let detailsText = resourceDetails[address].details;
+                            if (isOutput && (detailsText.startsWith('[') || detailsText.startsWith('{'))) {
+                                detailsText = detailsText.substring(1);
+                            }
+                            detailsElement.textContent = detailsText;
                             detailsElement.style.display = 'block'; // Set initial display to block
                             this.after(detailsElement);
+                            // If details are shown, remove the "..."
+                            if (this.dataset.outputType === 'array' || this.dataset.outputType === 'map') {
+                                this.innerHTML = this.innerHTML.replace(' = {...}', ' = {');
+                                this.innerHTML = this.innerHTML.replace(' = [...]', ' = [');
+                            }
                         } else {
                             console.log('No details found for:', address);
                         }
