@@ -112,10 +112,10 @@ export function activate(context: vscode.ExtensionContext) {
             let planOutputFormatted = '======================\n';
             planOutputFormatted += 'Terraform Plan Summary\n\n';
             planOutputFormatted += `From: ${source}\n`;
-            planOutputFormatted += '======================\n\n';
+            planOutputFormatted += '======================\n';
 
             if (outsideChangeResources.length > 0) {
-                planOutputFormatted += "==================\n";
+                planOutputFormatted += "\n==================\n";
                 planOutputFormatted += `${outsideChangeResources.length} CHANGES OUTSIDE TERRAFORM\n`;
                 planOutputFormatted += "==================";
 
@@ -125,62 +125,62 @@ export function activate(context: vscode.ExtensionContext) {
                     outsideChangeResources.forEach(detail => {
                         if (detail.symbol === symbol) {
                             planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
-                            planOutputFormatted += detail.details + '\n';
+                            planOutputFormatted += detail.details;
                         }
                     });
                 });
             }
 
             if (destroyResources.length > 0) {
-                planOutputFormatted += "==================\n";
+                planOutputFormatted += "\n==================\n";
                 planOutputFormatted += `${destroyResources.length} DESTROY\n`;
                 planOutputFormatted += "==================";
                 destroyResources.forEach(detail => {
                     planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
-                    planOutputFormatted += detail.details + '\n';
+                    planOutputFormatted += detail.details;
                 });
             }
             if (replaceCreateResources.length > 0) {
-                planOutputFormatted += "==================\n";
+                planOutputFormatted += "\n==================\n";
                 planOutputFormatted += `${replaceCreateResources.length} REPLACE: CREATE BEFORE DESTROY\n`;
                 planOutputFormatted += "==================";
                 replaceCreateResources.forEach(detail => {
                     const tainted = detail.changeType === 'is tainted, so must be replaced' ? '(tainted) ' : '';
                     planOutputFormatted += `\n${detail.symbol} ${tainted}${detail.address}\n`;
-                    planOutputFormatted += detail.details + '\n';
+                    planOutputFormatted += detail.details;
                 });
             }
             if (replaceDestroyResources.length > 0) {
-                planOutputFormatted += "==================\n";
+                planOutputFormatted += "\n==================\n";
                 planOutputFormatted += `${replaceDestroyResources.length} REPLACE: DESTROY BEFORE CREATE\n`;
                 planOutputFormatted += "==================";
                 replaceDestroyResources.forEach(detail => {
                     const tainted = detail.changeType === 'is tainted, so must be replaced' ? '(tainted) ' : '';
                     planOutputFormatted += `\n${detail.symbol} ${tainted}${detail.address}\n`;
-                    planOutputFormatted += detail.details + '\n';
+                    planOutputFormatted += detail.details;
                 });
             }
             if (updateResources.length > 0) {
-                planOutputFormatted += "==================\n";
+                planOutputFormatted += "\n==================\n";
                 planOutputFormatted += `${updateResources.length} UPDATE\n`;
                 planOutputFormatted += "==================";
                 updateResources.forEach(detail => {
                     planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
-                    planOutputFormatted += detail.details + '\n';
+                    planOutputFormatted += detail.details;
                 });
             }
             if (createResources.length > 0) {
-                planOutputFormatted += "==================\n";
+                planOutputFormatted += "\n==================\n";
                 planOutputFormatted += `${createResources.length} CREATE\n`;
                 planOutputFormatted += "==================";
                 createResources.forEach(detail => {
                     planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
-                    planOutputFormatted += detail.details + '\n';
+                    planOutputFormatted += detail.details;
                 });
             }
 
             if (outputChangeResources.length > 0) {
-                planOutputFormatted += "==================\n";
+                planOutputFormatted += "\n==================\n";
                 planOutputFormatted += `${outputChangeResources.length} OUTPUT CHANGES\n`;
                 planOutputFormatted += "==================";
 
@@ -191,17 +191,14 @@ export function activate(context: vscode.ExtensionContext) {
                         if (detail.symbol === symbol) {
                             let outputDetails = detail.details.trim();
                             let outputName = detail.resourceName;
-                            if (outputDetails.startsWith('{')) {
+                            if (outputDetails.startsWith('{') || outputDetails.startsWith('[')) {
+                                let bracket = outputDetails.startsWith('{') ? '{' : '['
                                 outputDetails = outputDetails.substring(1);
-                                planOutputFormatted += `\n${detail.symbol} ${outputName} = {\n`;
-                                planOutputFormatted += outputDetails + '\n';
-                            } else if (outputDetails.startsWith('[')) {
-                                outputDetails = outputDetails.substring(1);
-                                planOutputFormatted += `\n${detail.symbol} ${outputName} = [\n`;
-                                planOutputFormatted += outputDetails + '\n';
+                                planOutputFormatted += `\n${detail.symbol} ${outputName} = ${bracket}\n`;
+                                planOutputFormatted += outputDetails;
                             }
                             else {
-                                planOutputFormatted += `\n${detail.symbol} ${outputName} = ${outputDetails}\n`;
+                                planOutputFormatted += `\n${detail.symbol} ${outputName} = ${outputDetails}`;
                             }
                         }
                     });
@@ -502,13 +499,10 @@ function parsePlanOutput(planOutput: string): ParseResult {
                 }
             } else if (currentOutput) {
                 if (change.startsWith(' ')) {
-                    if (outputResourceDetails[`output.${currentOutput}`].details === "[" || outputResourceDetails[`output.${currentOutput}`].details === "{") {
-                        // prevent the first redundant new line
-                        outputResourceDetails[`output.${currentOutput}`].details += change;
-                    } else {
-                        outputResourceDetails[`output.${currentOutput}`].details += '\n' + change;
-                    }
+                    outputResourceDetails[`output.${currentOutput}`].details += change + '\n';
                 } else {
+                    // trim trailing new lines
+                    outputResourceDetails[`output.${currentOutput}`].details = outputResourceDetails[`output.${currentOutput}`].details.replace(/\n+$/g, '');
                     currentOutput = '';
                 }
             }
@@ -621,7 +615,7 @@ function extractResourceDetails(
                 resourceType,
                 resourceName,
                 address: address,
-                details: `  ${symbol} resource "${resourceType}" "${resourceName}" {${details}`
+                details: `  ${symbol} resource "${resourceType}" "${resourceName}" {${details}`.replace(/\n+$/g, '')
             };
         } else {
             console.log(`Failed to find details for ${address}`);
