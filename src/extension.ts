@@ -114,6 +114,23 @@ export function activate(context: vscode.ExtensionContext) {
             planOutputFormatted += `From: ${source}\n`;
             planOutputFormatted += '======================\n\n';
 
+            if (outsideChangeResources.length > 0) {
+                planOutputFormatted += "==================\n";
+                planOutputFormatted += `${outsideChangeResources.length} CHANGES OUTSIDE TERRAFORM\n`;
+                planOutputFormatted += "==================";
+
+                const orderedSymbols = ['-', '~'];
+
+                orderedSymbols.forEach(symbol => {
+                    outsideChangeResources.forEach(detail => {
+                        if (detail.symbol === symbol) {
+                            planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
+                            planOutputFormatted += detail.details + '\n';
+                        }
+                    });
+                });
+            }
+
             if (destroyResources.length > 0) {
                 planOutputFormatted += "==================\n";
                 planOutputFormatted += `${destroyResources.length} DESTROY\n`;
@@ -172,34 +189,20 @@ export function activate(context: vscode.ExtensionContext) {
                 orderedSymbols.forEach(symbol => {
                     outputChangeResources.forEach(detail => {
                         if (detail.symbol === symbol) {
-                            let outputDetails = detail.details;
-                            let outputName = detail.address.replace('output.', '');
+                            let outputDetails = detail.details.trim();
+                            let outputName = detail.resourceName;
                             if (outputDetails.startsWith('{')) {
                                 outputDetails = outputDetails.substring(1);
                                 planOutputFormatted += `\n${detail.symbol} ${outputName} = {\n`;
-                                planOutputFormatted += outputDetails;
+                                planOutputFormatted += outputDetails + '\n';
                             } else if (outputDetails.startsWith('[')) {
                                 outputDetails = outputDetails.substring(1);
                                 planOutputFormatted += `\n${detail.symbol} ${outputName} = [\n`;
-                                planOutputFormatted += outputDetails;
+                                planOutputFormatted += outputDetails + '\n';
                             }
                             else {
-                                planOutputFormatted += `\n${detail.symbol} ${outputName} = ${outputDetails}`;
+                                planOutputFormatted += `\n${detail.symbol} ${outputName} = ${outputDetails}\n`;
                             }
-                        }
-                    });
-            if (outsideChangeResources.length > 0) {
-                planOutputFormatted += "==================\n";
-                planOutputFormatted += `${outsideChangeResources.length} CHANGES OUTSIDE TERRAFORM\n`;
-                planOutputFormatted += "==================";
-
-                const orderedSymbols = ['-', '~'];
-
-                orderedSymbols.forEach(symbol => {
-                    outsideChangeResources.forEach(detail => {
-                        if (detail.symbol === symbol) {
-                            planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
-                            planOutputFormatted += detail.details + '\n';
                         }
                     });
                 });
@@ -358,14 +361,6 @@ function parsePlanOutput(planOutput: string): ParseResult {
 
     let summary = '';
 
-    if (destroyMatches.length > 0) {
-        summary += `<div class="summary-header destroy" data-group="destroy"><h2 class="destroy">${destroyMatches.length} TO BE DESTROYED</h2></div>\n`;
-        destroyMatches.forEach(resource => {
-            // Remove quotes from data-address
-            const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy destroy-resource" data-address="${cleanedAddress}" style="white-space: nowrap">- ${resource}</div>\n`;
-        });
-    }
     const replaceCreateBeforeDestroyMatches = replaceMatches.filter(resource => {
         const regex = new RegExp(`# ${escapeRegExp(resource)} must be replaced\\n\\s*\\+/`);
         return regex.test(planOutput);
@@ -383,6 +378,45 @@ function parsePlanOutput(planOutput: string): ParseResult {
         const regex = new RegExp(`# ${escapeRegExp(resource)} is tainted, so must be replaced\\n\\s*-/`);
         return regex.test(planOutput);
     });
+
+    if (outsideChangeWasModifiedMatches.length > 0 || outsideChangeModifiedMatches.length > 0 || outsideChangeDeletedMatches.length > 0 || outsideChangeDestroyedMatches.length > 0) {
+        summary += `<div class="summary-header outside-change" data-group="outside-change"><h2>${outsideChangeWasModifiedMatches.length + outsideChangeModifiedMatches.length + outsideChangeDeletedMatches.length + outsideChangeDestroyedMatches.length} CHANGES OUTSIDE TERRAFORM</h2></div>\n`;
+
+        const orderedSymbols = ['-', '~'];
+
+        orderedSymbols.forEach(symbol => {
+            if (symbol === '-') {
+                outsideChangeDeletedMatches.forEach(resource => {
+                    const cleanedAddress = resource.replace(/"/g, '');
+                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
+                });
+
+                outsideChangeDestroyedMatches.forEach(resource => {
+                    const cleanedAddress = resource.replace(/"/g, '');
+                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
+                });
+            } else if (symbol === '~') {
+                outsideChangeWasModifiedMatches.forEach(resource => {
+                    const cleanedAddress = resource.replace(/"/g, '');
+                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
+                });
+
+                outsideChangeModifiedMatches.forEach(resource => {
+                    const cleanedAddress = resource.replace(/"/g, '');
+                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
+                });
+            }
+        });
+    }
+
+    if (destroyMatches.length > 0) {
+        summary += `<div class="summary-header destroy" data-group="destroy"><h2 class="destroy">${destroyMatches.length} TO BE DESTROYED</h2></div>\n`;
+        destroyMatches.forEach(resource => {
+            // Remove quotes from data-address
+            const cleanedAddress = resource.replace(/"/g, '');
+            summary += `<div class="resource destroy destroy-resource" data-address="${cleanedAddress}" style="white-space: nowrap">- ${resource}</div>\n`;
+        });
+    }
 
     if (replaceCreateBeforeDestroyMatches.length > 0 || replaceTaintedCreateBeforeDestroyMatches.length > 0) {
         summary += `<div class="summary-header destroy" data-group="replace-create"><h2 class="destroy">${replaceCreateBeforeDestroyMatches.length + replaceTaintedCreateBeforeDestroyMatches.length} CREATE BEFORE DESTROY REPLACEMENT</h2></div>\n`;
@@ -427,36 +461,6 @@ function parsePlanOutput(planOutput: string): ParseResult {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
             summary += `<div class="resource create create-resource" data-address="${cleanedAddress}" style="white-space: nowrap">+ ${resource}</div>\n`;
-        });
-    }
-
-    if (outsideChangeWasModifiedMatches.length > 0 || outsideChangeModifiedMatches.length > 0 || outsideChangeDeletedMatches.length > 0 || outsideChangeDestroyedMatches.length > 0) {
-        summary += `<div class="summary-header outside-change" data-group="outside-change"><h2>${outsideChangeWasModifiedMatches.length + outsideChangeModifiedMatches.length + outsideChangeDeletedMatches.length + outsideChangeDestroyedMatches.length} CHANGES OUTSIDE TERRAFORM</h2></div>\n`;
-
-        const orderedSymbols = ['-', '~'];
-
-        orderedSymbols.forEach(symbol => {
-            if (symbol === '-') {
-                outsideChangeDeletedMatches.forEach(resource => {
-                    const cleanedAddress = resource.replace(/"/g, '');
-                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
-                });
-
-                outsideChangeDestroyedMatches.forEach(resource => {
-                    const cleanedAddress = resource.replace(/"/g, '');
-                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
-                });
-            } else if (symbol === '~') {
-                outsideChangeWasModifiedMatches.forEach(resource => {
-                    const cleanedAddress = resource.replace(/"/g, '');
-                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
-                });
-
-                outsideChangeModifiedMatches.forEach(resource => {
-                    const cleanedAddress = resource.replace(/"/g, '');
-                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
-                });
-            }
         });
     }
 
