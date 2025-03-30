@@ -429,24 +429,30 @@ function parsePlanOutput(planOutput: string): ParseResult {
     if (outsideChangeWasModifiedMatches.length > 0 || outsideChangeModifiedMatches.length > 0 || outsideChangeDeletedMatches.length > 0 || outsideChangeDestroyedMatches.length > 0) {
         summary += `<div class="summary-header outside-change" data-group="outside-change"><h2>${outsideChangeWasModifiedMatches.length + outsideChangeModifiedMatches.length + outsideChangeDeletedMatches.length + outsideChangeDestroyedMatches.length} CHANGES OUTSIDE TERRAFORM</h2></div>\n`;
 
-        outsideChangeWasModifiedMatches.forEach(resource => {
-            const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
-        });
+        const orderedSymbols = ['-', '~'];
 
-        outsideChangeModifiedMatches.forEach(resource => {
-            const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
-        });
+        orderedSymbols.forEach(symbol => {
+            if (symbol === '-') {
+                outsideChangeDeletedMatches.forEach(resource => {
+                    const cleanedAddress = resource.replace(/"/g, '');
+                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
+                });
 
-        outsideChangeDeletedMatches.forEach(resource => {
-            const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
-        });
+                outsideChangeDestroyedMatches.forEach(resource => {
+                    const cleanedAddress = resource.replace(/"/g, '');
+                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
+                });
+            } else if (symbol === '~') {
+                outsideChangeWasModifiedMatches.forEach(resource => {
+                    const cleanedAddress = resource.replace(/"/g, '');
+                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
+                });
 
-        outsideChangeDestroyedMatches.forEach(resource => {
-            const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
+                outsideChangeModifiedMatches.forEach(resource => {
+                    const cleanedAddress = resource.replace(/"/g, '');
+                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
+                });
+            }
         });
     }
 
