@@ -188,16 +188,20 @@ export function activate(context: vscode.ExtensionContext) {
                             }
                         }
                     });
-                });
-            }
-
             if (outsideChangeResources.length > 0) {
                 planOutputFormatted += "==================\n";
                 planOutputFormatted += `${outsideChangeResources.length} CHANGES OUTSIDE TERRAFORM\n`;
                 planOutputFormatted += "==================";
-                outsideChangeResources.forEach(detail => {
-                    planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
-                    planOutputFormatted += detail.details + '\n';
+
+                const orderedSymbols = ['-', '~'];
+
+                orderedSymbols.forEach(symbol => {
+                    outsideChangeResources.forEach(detail => {
+                        if (detail.symbol === symbol) {
+                            planOutputFormatted += `\n${detail.symbol} ${detail.address}\n`;
+                            planOutputFormatted += detail.details + '\n';
+                        }
+                    });
                 });
             }
 
