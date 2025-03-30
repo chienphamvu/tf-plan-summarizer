@@ -15,7 +15,7 @@ last "terraform apply" which may have affected this plan:
       ~ acl = "private" -> "public-read"
     }
 
-  # aws_instance.instance_deleted has been destroyed
+  # aws_instance.instance_destroyed has been destroyed
 - resource "aws_instance" "instance_destroyed" {
       - id            = "i-yyyyyyyyyyyyyyyyy" -> null
       - ami           = "ami-0c55b516cb98f8221" -> null
@@ -24,7 +24,7 @@ last "terraform apply" which may have affected this plan:
           - "Name" = "DestroyedInstance"
         }
     }
-  
+
   # aws_instance.instance_deleted has been deleted
 - resource "aws_instance" "instance_deleted" {
       - id            = "i-yyyyyyyyyyyyyyyyy" -> null
