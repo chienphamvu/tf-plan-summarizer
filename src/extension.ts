@@ -508,7 +508,7 @@ function parsePlanOutput(planOutput: string): ParseResult {
             }
         });
 
-        summary += `<div class="summary-header output-change" data-group="output-change"><h2>CHANGES TO OUTPUTS</h2></div>\n`;
+        summary += `<div class="summary-header output-change" data-group="output-change"><h2>${Object.keys(outputResourceDetails).length} CHANGES TO OUTPUTS</h2></div>\n`;
         const orderedSymbols = ['-', '~', '+'];
 
         orderedSymbols.forEach(symbol => {

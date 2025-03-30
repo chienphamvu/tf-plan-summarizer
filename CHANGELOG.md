@@ -1,9 +1,9 @@
 # Change Log
 
-## <WIP>
+## 1.0.0
 
 - Add support for changes outside of Terraform
-- Add support for output changes of Terraform
+- Add support for output changes
 
 ## 0.3.3
 
