@@ -1,5 +1,9 @@
 # Change Log
 
+## 1.0.1
+
+- Fix "must be replaced" capturing
+
 ## 1.0.0
 
 - Add support for changes outside of Terraform

@@ -359,20 +359,20 @@ function parsePlanOutput(planOutput: string): ParseResult {
     let summary = '';
 
     const replaceCreateBeforeDestroyMatches = replaceMatches.filter(resource => {
-        const regex = new RegExp(`# ${escapeRegExp(resource)} must be replaced\\n\\s*\\+/`);
+        const regex = new RegExp(`# ${escapeRegExp(resource)} must be replaced\\n\\s*(?:\\#\\s.*\\n\\s*)?\\+/`);
         return regex.test(planOutput);
     });
     const replaceTaintedCreateBeforeDestroyMatches = replaceTaintedMatches.filter(resource => {
-        const regex = new RegExp(`# ${escapeRegExp(resource)} is tainted, so must be replaced\\n\\s*\\+/`);
+        const regex = new RegExp(`# ${escapeRegExp(resource)} is tainted, so must be replaced\\n\\s*(?:\\#\\s.*\\n\\s*)?\\+/`);
         return regex.test(planOutput);
     });
 
     const replaceDestroyBeforeCreateMatches = replaceMatches.filter(resource => {
-        const regex = new RegExp(`# ${escapeRegExp(resource)} must be replaced\\n\\s*-/`);
+        const regex = new RegExp(`# ${escapeRegExp(resource)} must be replaced\\n\\s*(?:\\#\\s.*\\n\\s*)?\\-/`);
         return regex.test(planOutput);
     });
     const replaceTaintedDestroyBeforeCreateMatches = replaceTaintedMatches.filter(resource => {
-        const regex = new RegExp(`# ${escapeRegExp(resource)} is tainted, so must be replaced\\n\\s*-/`);
+        const regex = new RegExp(`# ${escapeRegExp(resource)} is tainted, so must be replaced\\n\\s*(?:\\#\\s.*\\n\\s*)?\\-/`);
         return regex.test(planOutput);
     });
 

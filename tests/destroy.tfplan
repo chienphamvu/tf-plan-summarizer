@@ -16,6 +16,7 @@ Terraform will perform the following actions:
     }
 
   # aws_instance.replace_1 must be replaced
+  # (moved from aws_instance.replace_4)
 -/+ resource "aws_instance" "replace_1" {
         id            = "i-yyyyyyyyyyyyyyyyy"
       - ami           = "ami-0c55b516cb98f8221" -> null
@@ -70,4 +71,20 @@ Terraform will perform the following actions:
         }
     }
 
-Plan: 1 to add, 1 to change, 4 to destroy.
+  # aws_instance.tainted_instance_2 is tainted, so must be replaced
+  # (moved from aws_instance.tainted_instance_moved)
++/- resource "aws_instance" "tainted_instance_2" {
+        id            = "i-vvvvvvvvvvvvvvv"
+      - ami           = "ami-0c55b516cb98f8221" -> null
+      - instance_type = "t2.micro"      -> null
+      - tags          = {
+          - "Name" = "TaintedInstance"
+        }
+      + ami           = "ami-0c55b516cb98f8221"
+      + instance_type = "t2.micro"
+      + tags          = {
+          + "Name" = "TaintedInstance_Tainted"
+        }
+    }
+
+Plan: 4 to add, 1 to change, 5 to destroy.
