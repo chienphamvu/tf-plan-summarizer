@@ -386,25 +386,25 @@ function parsePlanOutput(planOutput: string): ParseResult {
                 outsideChangeDeletedMatches.forEach(resource => {
                     const cleanedAddress = resource.replace(/"/g, '');
                     const resourceId = `${cleanedAddress}-has-been-deleted`;
-                    summary += `<div class="resource" data-address="${resourceId}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
+                    summary += `<div class="resource outside-change-resource" data-address="${resourceId}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
                 });
 
                 outsideChangeDestroyedMatches.forEach(resource => {
                     const cleanedAddress = resource.replace(/"/g, '');
                     const resourceId = `${cleanedAddress}-has-been-destroyed`;
-                    summary += `<div class="resource" data-address="${resourceId}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
+                    summary += `<div class="resource outside-change-resource" data-address="${resourceId}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
                 });
             } else if (symbol === '~') {
                 outsideChangeWasModifiedMatches.forEach(resource => {
                     const cleanedAddress = resource.replace(/"/g, '');
                     const resourceId = `${cleanedAddress}-has-been-changed`;
-                    summary += `<div class="resource" data-address="${resourceId}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
+                    summary += `<div class="resource outside-change-resource" data-address="${resourceId}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
                 });
 
                 outsideChangeModifiedMatches.forEach(resource => {
                     const cleanedAddress = resource.replace(/"/g, '');
                     const resourceId = `${cleanedAddress}-has-changed`;
-                    summary += `<div class="resource" data-address="${resourceId}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
+                    summary += `<div class="resource outside-change-resource" data-address="${resourceId}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
                 });
             }
         });
