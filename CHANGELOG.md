@@ -1,5 +1,8 @@
 # Change Log
 
+## 1.0.2
+- Fix detecting changes for the same resource address in "changes outside terraform" and changes in plan
+
 ## 1.0.1
 
 - Fix "must be replaced" capturing

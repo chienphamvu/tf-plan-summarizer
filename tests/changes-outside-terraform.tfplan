@@ -74,4 +74,10 @@ Terraform will perform the following actions:
         }
     }
 
-Plan: 1 to add, 2 to change, 2 to destroy.
+  # aws_instance.instance_1 will be updated in-place
+~ resource "aws_instance" "instance_1" {
+        id            = "i-xxxxxxxxxxxxxxxxx"
+      ~ instance_type = "t2.small" -> "t2.micro"
+    }
+
+Plan: 1 to add, 3 to change, 2 to destroy.

@@ -385,22 +385,26 @@ function parsePlanOutput(planOutput: string): ParseResult {
             if (symbol === '-') {
                 outsideChangeDeletedMatches.forEach(resource => {
                     const cleanedAddress = resource.replace(/"/g, '');
-                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
+                    const resourceId = `${cleanedAddress}-has-been-deleted`;
+                    summary += `<div class="resource" data-address="${resourceId}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
                 });
 
                 outsideChangeDestroyedMatches.forEach(resource => {
                     const cleanedAddress = resource.replace(/"/g, '');
-                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
+                    const resourceId = `${cleanedAddress}-has-been-destroyed`;
+                    summary += `<div class="resource" data-address="${resourceId}" style="white-space: nowrap"><span class="destroy">-</span> ${resource}</div>\n`;
                 });
             } else if (symbol === '~') {
                 outsideChangeWasModifiedMatches.forEach(resource => {
                     const cleanedAddress = resource.replace(/"/g, '');
-                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
+                    const resourceId = `${cleanedAddress}-has-been-changed`;
+                    summary += `<div class="resource" data-address="${resourceId}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
                 });
 
                 outsideChangeModifiedMatches.forEach(resource => {
                     const cleanedAddress = resource.replace(/"/g, '');
-                    summary += `<div class="resource" data-address="${cleanedAddress}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
+                    const resourceId = `${cleanedAddress}-has-changed`;
+                    summary += `<div class="resource" data-address="${resourceId}" style="white-space: nowrap"><span class="update">~</span> ${resource}</div>\n`;
                 });
             }
         });
@@ -411,7 +415,8 @@ function parsePlanOutput(planOutput: string): ParseResult {
         destroyMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy destroy-resource" data-address="${cleanedAddress}" style="white-space: nowrap">- ${resource}</div>\n`;
+            const resourceId = `${cleanedAddress}-will-be-destroyed`;
+            summary += `<div class="resource destroy destroy-resource" data-address="${resourceId}" style="white-space: nowrap">- ${resource}</div>\n`;
         });
     }
 
@@ -420,12 +425,14 @@ function parsePlanOutput(planOutput: string): ParseResult {
         replaceCreateBeforeDestroyMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy replace-create-resource" data-address="${cleanedAddress}" style="white-space: nowrap">+/- ${resource}</div>\n`;
+            const resourceId = `${cleanedAddress}-must-be-replaced`;
+            summary += `<div class="resource destroy replace-create-resource" data-address="${resourceId}" style="white-space: nowrap">+/- ${resource}</div>\n`;
         });
         replaceTaintedCreateBeforeDestroyMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy replace-create-resource" data-address="${cleanedAddress}" style="white-space: nowrap">+/- (tainted) ${resource}</div>\n`;
+            const resourceId = `${cleanedAddress}-is-tainted-so-must-be-replaced`;
+            summary += `<div class="resource destroy replace-create-resource" data-address="${resourceId}" style="white-space: nowrap">+/- (tainted) ${resource}</div>\n`;
         });
     }
 
@@ -434,12 +441,14 @@ function parsePlanOutput(planOutput: string): ParseResult {
         replaceDestroyBeforeCreateMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy replace-destroy-resource" data-address="${cleanedAddress}" style="white-space: nowrap">-/+ ${resource}</div>\n`;
+            const resourceId = `${cleanedAddress}-must-be-replaced`;
+            summary += `<div class="resource destroy replace-destroy-resource" data-address="${resourceId}" style="white-space: nowrap">-/+ ${resource}</div>\n`;
         });
         replaceTaintedDestroyBeforeCreateMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource destroy replace-destroy-resource" data-address="${cleanedAddress}" style="white-space: nowrap">-/+ (tainted) ${resource}</div>\n`;
+            const resourceId = `${cleanedAddress}-is-tainted-so-must-be-replaced`;
+            summary += `<div class="resource destroy replace-destroy-resource" data-address="${resourceId}" style="white-space: nowrap">-/+ (tainted) ${resource}</div>\n`;
         });
     }
 
@@ -448,7 +457,8 @@ function parsePlanOutput(planOutput: string): ParseResult {
         updateMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource update update-resource" data-address="${cleanedAddress}" style="white-space: nowrap">~ ${resource}</div>\n`;
+            const resourceId = `${cleanedAddress}-will-be-updated-in-place`;
+            summary += `<div class="resource update update-resource" data-address="${resourceId}" style="white-space: nowrap">~ ${resource}</div>\n`;
         });
     }
 
@@ -457,7 +467,8 @@ function parsePlanOutput(planOutput: string): ParseResult {
         createMatches.forEach(resource => {
             // Remove quotes from data-address
             const cleanedAddress = resource.replace(/"/g, '');
-            summary += `<div class="resource create create-resource" data-address="${cleanedAddress}" style="white-space: nowrap">+ ${resource}</div>\n`;
+            const resourceId = `${cleanedAddress}-will-be-created`;
+            summary += `<div class="resource create create-resource" data-address="${resourceId}" style="white-space: nowrap">+ ${resource}</div>\n`;
         });
     }
 
@@ -608,8 +619,10 @@ function extractResourceDetails(
             const resourceName = match[3];
             // Remove quotes from the key
             const cleanedAddress = address.replace(/"/g, '');
+            let resourceId = `${cleanedAddress}-${changeType.replace(/ /g, '-')}`;
+            resourceId = resourceId.replace(/,/g, '');
 
-            resourceDetails[cleanedAddress] = {
+            resourceDetails[resourceId] = {
                 changeType,
                 symbol,
                 resourceType,
@@ -742,15 +755,15 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
                 const shouldExpand = visibleCount <= resourceElements.length / 2;
 
                 resourceElements.forEach(resource => {
-                    const address = resource.getAttribute('data-address');
+                    const resourceId = resource.getAttribute('data-address');
                     let detailsElement = resource.nextElementSibling;
                     const isOutput = resource.dataset.outputType === 'array' || resource.dataset.outputType === 'map';
 
                     if (!detailsElement || !detailsElement.classList.contains('resource-details')) {
-                        if (resourceDetails[address]) {
+                        if (resourceDetails[resourceId]) {
                             detailsElement = document.createElement('pre');
                             detailsElement.className = 'resource-details' + (isOutput ? ' output-resource-details' : '');
-                            let detailsText = resourceDetails[address].details;
+                            let detailsText = resourceDetails[resourceId].details;
                             if (isOutput && (detailsText.startsWith('[') || detailsText.startsWith('{'))) {
                                 detailsText = detailsText.substring(1);
                             }
@@ -769,7 +782,7 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
                                 }
                             }
                         } else {
-                            console.log('No details found for:', address);
+                            console.log('No details found for:', resourceId);
                             return;
                         }
                     } else {
@@ -813,7 +826,7 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
                     // Prevent the summary-header click from firing when clicking on a resource
                     event.stopPropagation();
 
-                    const address = this.getAttribute('data-address');
+                    const resourceId = this.getAttribute('data-address');
                     let detailsElement = this.nextElementSibling;
                     const isOutput = this.dataset.outputType === 'array' || this.dataset.outputType === 'map';
 
@@ -831,10 +844,10 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
                             this.innerHTML = this.innerHTML.replace(' = {', ' = {...}');
                         }
                     } else {
-                        if (resourceDetails[address]) {
+                        if (resourceDetails[resourceId]) {
                             detailsElement = document.createElement('pre');
                             detailsElement.className = 'resource-details' + (isOutput ? ' output-resource-details' : '');
-                            let detailsText = resourceDetails[address].details;
+                            let detailsText = resourceDetails[resourceId].details;
                             if (isOutput && (detailsText.startsWith('[') || detailsText.startsWith('{'))) {
                                 detailsText = detailsText.substring(1);
                             }
@@ -847,7 +860,7 @@ function getWebviewContent(summary: string, resourceDetails: Record<string, Reso
                                 this.innerHTML = this.innerHTML.replace(' = [...]', ' = [');
                             }
                         } else {
-                            console.log('No details found for:', address);
+                            console.log('No details found for:', resourceId);
                         }
                     }
                 });
