@@ -2,6 +2,7 @@
 
 ## 1.0.2
 - Fix detecting changes for the same resource address in "changes outside terraform" and changes in plan
+- Fix clicking on "CHANGES OUTSIDE TERRAFORM" title to expand/collapse all item details
 
 ## 1.0.1
 

@@ -116,7 +116,8 @@ export function activate(context: vscode.ExtensionContext) {
 
             if (outsideChangeResources.length > 0) {
                 planOutputFormatted += "\n==================\n";
-                planOutputFormatted += `${outsideChangeResources.length} CHANGES OUTSIDE TERRAFORM\n`;
+                const outsideChangeText = outsideChangeResources.length === 1 ? 'CHANGE' : 'CHANGES';
+                planOutputFormatted += `${outsideChangeResources.length} ${outsideChangeText} OUTSIDE TERRAFORM\n`;
                 planOutputFormatted += "==================";
 
                 const orderedSymbols = ['-', '~'];
@@ -181,7 +182,8 @@ export function activate(context: vscode.ExtensionContext) {
 
             if (outputChangeResources.length > 0) {
                 planOutputFormatted += "\n==================\n";
-                planOutputFormatted += `${outputChangeResources.length} OUTPUT CHANGES\n`;
+                const outputChangeText = outputChangeResources.length === 1 ? 'CHANGE' : 'CHANGES';
+                planOutputFormatted += `${outputChangeResources.length} OUTPUT ${outputChangeText}\n`;
                 planOutputFormatted += "==================";
 
                 const orderedSymbols = ['-', '~', '+'];
@@ -377,7 +379,9 @@ function parsePlanOutput(planOutput: string): ParseResult {
     });
 
     if (outsideChangeWasModifiedMatches.length > 0 || outsideChangeModifiedMatches.length > 0 || outsideChangeDeletedMatches.length > 0 || outsideChangeDestroyedMatches.length > 0) {
-        summary += `<div class="summary-header outside-change" data-group="outside-change"><h2>${outsideChangeWasModifiedMatches.length + outsideChangeModifiedMatches.length + outsideChangeDeletedMatches.length + outsideChangeDestroyedMatches.length} CHANGES OUTSIDE TERRAFORM</h2></div>\n`;
+        const outsideChangeCount = outsideChangeWasModifiedMatches.length + outsideChangeModifiedMatches.length + outsideChangeDeletedMatches.length + outsideChangeDestroyedMatches.length;
+        const outsideChangeText = outsideChangeCount === 1 ? 'CHANGE' : 'CHANGES';
+        summary += `<div class="summary-header outside-change" data-group="outside-change"><h2>${outsideChangeCount} ${outsideChangeText} OUTSIDE TERRAFORM</h2></div>\n`;
 
         const orderedSymbols = ['-', '~'];
 
@@ -519,7 +523,9 @@ function parsePlanOutput(planOutput: string): ParseResult {
             }
         });
 
-        summary += `<div class="summary-header output-change" data-group="output-change"><h2>${Object.keys(outputResourceDetails).length} CHANGES TO OUTPUTS</h2></div>\n`;
+        const outputChangeCount = Object.keys(outputResourceDetails).length;
+        const outputChangeText = outputChangeCount === 1 ? 'CHANGE' : 'CHANGES';
+        summary += `<div class="summary-header output-change" data-group="output-change"><h2>${outputChangeCount} ${outputChangeText} TO OUTPUTS</h2></div>\n`;
         const orderedSymbols = ['-', '~', '+'];
 
         orderedSymbols.forEach(symbol => {

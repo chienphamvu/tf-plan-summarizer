@@ -15,7 +15,7 @@ A Visual Studio Code extension to summarize Terraform plan outputs in a more rea
         *   The current open file
         *   The clipboard
         *   The current open file as a binary plan
-    *   The extension will display a summary in a webview panel. Clicking on each item will expand the details for that specific item. Clicking on each section title will expand/collapse details of all items in that section.
+    *   The extension will display a summary in a webview panel. Clicking on each item will expand/collapse the details for that specific item. Clicking on each section title will expand/collapse details of all items in that section.
     <br><br>
     ![Summary](images/summary.png)
     <br><br>
