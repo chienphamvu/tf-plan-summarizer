@@ -31,7 +31,7 @@ Terraform will perform the following actions:
         }
     }
 
-  # aws_instance.replace_2 must be replaced
+  # module.main["address with spaces"].aws_instance.replace_2 must be replaced
 +/- resource "aws_instance" "replace_2" {
         id            = "i-zzzzzzzzzzzzzzzz"
       - ami           = "ami-0c55b516cb98f8221" -> null

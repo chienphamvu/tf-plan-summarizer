@@ -10,7 +10,7 @@ A Visual Studio Code extension to summarize Terraform plan outputs in a more rea
 ## Usage
 
 1.  Run the **TF Plan Summarizer: Summarize** command from the command palette (Ctrl+Shift+P or Cmd+Shift+P).
-    *   The extension will attempt to read the plan from:
+    *   The extension will attempt to read the plan (human-readable plan) from:
         *   The current text selection
         *   The current open file
         *   The clipboard
@@ -25,6 +25,7 @@ A Visual Studio Code extension to summarize Terraform plan outputs in a more rea
     ![Summary In Editor](images/summary-in-editor.png)
     <br><br>
 3. Context menus are also available when right-clicking on `.plan` or `.tfplan` files.
+    *   This especially runs `terraform show` on the file to get the human-readable plan output, then parse it from there. So it expects the terraform configuration is runnable and is in the same directory.
     <br><br>
     ![Context Menus](images/context-menu.png)
     <br><br>

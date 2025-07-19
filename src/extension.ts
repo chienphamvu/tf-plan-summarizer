@@ -339,7 +339,7 @@ function parsePlanOutput(planOutput: string): ParseResult {
     const createRegex = /# (.+?) will be created/g;
     const updateRegex = /# (.+?) will be updated in-place/g;
     const destroyRegex = /# (.+?) will be destroyed/g;
-    const replaceRegex = /# ([^ ]+?) must be replaced/g;
+    const replaceRegex = /# ((?:(?! is tainted, so).)+) must be replaced/g;
     const replaceTaintedRegex = /# (.+?) is tainted, so must be replaced/g;
 
     const createMatches = Array.from(planOutput.matchAll(createRegex)).map(match => match[1]);
